@@ -101,6 +101,7 @@ public:
     renderscript32, // 32-bit RenderScript
     renderscript64, // 64-bit RenderScript
     ve,             // NEC SX-Aurora Vector Engine
+    ember,
     LastArchType = ve
   };
   enum SubArchType {
@@ -772,6 +773,11 @@ public:
   /// Tests whether the target is RISC-V (32- and 64-bit).
   bool isRISCV() const {
     return getArch() == Triple::riscv32 || getArch() == Triple::riscv64;
+  }
+
+  /// Tests whether the target is EMBER (32-bit).
+  bool isEMBER() const {
+    return getArch() == Triple::ember;
   }
 
   /// Tests whether the target is SystemZ.

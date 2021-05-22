@@ -1,0 +1,7 @@
+
+#ifndef ELF_RELOC
+#error "ELF_RELOC must be defined"
+#endif
+
+ELF_RELOC(R_EMBER_NONE,               0)
+ELF_RELOC(R_EMBER_32,                 1)

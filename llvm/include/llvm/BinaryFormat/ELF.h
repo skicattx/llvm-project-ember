@@ -318,6 +318,7 @@ enum {
   EM_BPF = 247,           // Linux kernel bpf virtual machine
   EM_VE = 251,            // NEC SX-Aurora VE
   EM_CSKY = 252,          // C-SKY 32-bit processor
+  EM_EMBER = 999,         // Ember32 vProcessor    
 };
 
 // Object file classes.
@@ -497,6 +498,17 @@ enum : unsigned {
 // ELF Relocation types for AVR
 enum {
 #include "ELFRelocs/AVR.def"
+};
+
+// Ember specific e_flags
+enum : unsigned {
+  EF_EMBER_NOREORDER = 0x00000001, // Don't reorder instructions
+  EF_EMBER_PIC       = 0x00000002, // Position independent code
+};
+
+// ELF Relocation types for ember
+enum {
+#include "ELFRelocs/EMBER.def"
 };
 
 // Mips Specific e_flags
