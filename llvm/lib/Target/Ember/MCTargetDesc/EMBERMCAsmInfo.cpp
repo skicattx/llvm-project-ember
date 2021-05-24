@@ -17,14 +17,22 @@ using namespace llvm;
 
 void EMBERMCAsmInfo::anchor() {}
 
-EMBERMCAsmInfo::EMBERMCAsmInfo(const Triple &TT) {
-  CodePointerSize = 4;
-  CommentString = ";";
-  AlignmentIsInBytes = false;
-  SupportsDebugInformation = true;
-  ExceptionsType = ExceptionHandling::None;
-  Data16bitsDirective = "\t.half\t";
-  Data32bitsDirective = "\t.word\t";
+EMBERMCAsmInfo::EMBERMCAsmInfo(const Triple &TT) 
+{
+    CodePointerSize = 4;
+    CommentString = ";";
+    AlignmentIsInBytes = false;
+    SupportsDebugInformation = true;
+    ExceptionsType = ExceptionHandling::None;
+//   Data16bitsDirective = "\t.half\t";
+//   Data32bitsDirective = "\t.word\t";
+
+
+    DollarIsPC = true;
+    SeparatorString = "\n";
+//  AllowQuestionAtStartOfIdentifier = true;
+    AllowDollarAtStartOfIdentifier = true;
+//  AllowAtAtStartOfIdentifier = true;
 }
 
 // const MCExpr *EMBERMCAsmInfo::getExprForFDESymbol(const MCSymbol *Sym,

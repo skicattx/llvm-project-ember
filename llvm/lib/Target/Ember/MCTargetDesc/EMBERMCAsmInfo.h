@@ -16,11 +16,12 @@
 namespace llvm {
 class Triple;
 
-class EMBERMCAsmInfo : public MCAsmInfoELF {
-  void anchor() override;
+class EMBERMCAsmInfo : public MCAsmInfoELF 
+{
+    void anchor() override;
 
 public:
-  explicit EMBERMCAsmInfo(const Triple &TargetTriple);
+    explicit EMBERMCAsmInfo(const Triple &TargetTriple);
 
 //   const MCExpr *getExprForFDESymbol(const MCSymbol *Sym, unsigned Encoding,
 //                                     MCStreamer &Streamer) const override;

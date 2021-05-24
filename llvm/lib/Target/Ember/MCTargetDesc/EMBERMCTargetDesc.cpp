@@ -38,9 +38,9 @@ using namespace llvm;
 
 static MCInstrInfo *createEMBERMCInstrInfo() 
 {
-  MCInstrInfo *X = new MCInstrInfo();
-  InitEMBERMCInstrInfo(X);
-  return X;
+    MCInstrInfo* X = new MCInstrInfo();
+    InitEMBERMCInstrInfo(X);
+    return X;
 }
 
 static MCRegisterInfo *createEMBERMCRegisterInfo(const Triple &TT)
@@ -63,23 +63,26 @@ static MCAsmInfo *createEMBERMCAsmInfo(const MCRegisterInfo &MRI,
   return MAI;
 }
 
-static MCSubtargetInfo *createEMBERMCSubtargetInfo(const Triple &TT,
-                                                   StringRef CPU, StringRef FS) {
-  if (CPU.empty())
-    CPU = TT.isArch64Bit() ? "generic-rv64" : "generic-rv32";
-  if (CPU == "generic")
-    report_fatal_error(Twine("CPU 'generic' is not supported. Use ") +
-                       (TT.isArch64Bit() ? "generic-rv64" : "generic-rv32"));
-  return createEMBERMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
+static MCSubtargetInfo *createEMBERMCSubtargetInfo(const Triple &TT, StringRef CPU, StringRef FS)
+{
+    if (TT.isArch64Bit())
+        report_fatal_error(Twine("64-bit CPU is not supported. Use 'ember32'"));
+    if (CPU == "generic")
+        report_fatal_error(Twine("CPU 'generic' is not supported. Use 'ember32'"));
+    if (CPU.empty())
+        CPU = "ember32";
+    return createEMBERMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
 }
 
 static MCInstPrinter *createEMBERMCInstPrinter(const Triple &T,
                                                unsigned SyntaxVariant,
                                                const MCAsmInfo &MAI,
                                                const MCInstrInfo &MII,
-                                               const MCRegisterInfo &MRI) {
-  return new EMBERInstPrinter(MAI, MII, MRI);
+                                               const MCRegisterInfo &MRI) 
+{
+    return new EMBERInstPrinter(MAI, MII, MRI);
 }
+
 /*
 
 static MCTargetStreamer *

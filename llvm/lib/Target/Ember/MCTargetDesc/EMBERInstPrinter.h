@@ -17,11 +17,12 @@
 namespace llvm {
 
 
-class EMBERInstPrinter : public MCInstPrinter {
+class EMBERInstPrinter : public MCInstPrinter 
+{
 public:
-  EMBERInstPrinter(const MCAsmInfo &MAI, const MCInstrInfo &MII,
-                   const MCRegisterInfo &MRI)
-      : MCInstPrinter(MAI, MII, MRI) {}
+    EMBERInstPrinter(const MCAsmInfo &MAI, const MCInstrInfo &MII, const MCRegisterInfo &MRI) :
+        MCInstPrinter(MAI, MII, MRI) 
+    {}
 
 /*
   bool applyTargetSpecificCLOption(StringRef Opt) override;

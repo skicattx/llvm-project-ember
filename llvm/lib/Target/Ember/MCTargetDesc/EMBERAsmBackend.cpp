@@ -478,8 +478,10 @@ std::unique_ptr<MCObjectTargetWriter> EMBERAsmBackend::createObjectTargetWriter(
 MCAsmBackend *llvm::createEMBERAsmBackend(const Target &T,
                                           const MCSubtargetInfo &STI,
                                           const MCRegisterInfo &MRI,
-                                          const MCTargetOptions &Options) {
-  const Triple &TT = STI.getTargetTriple();
-  uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
-  return new EMBERAsmBackend(STI, OSABI, Options);
+                                          const MCTargetOptions &Options) 
+{
+    const Triple &TT = STI.getTargetTriple();
+    uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
+    
+    return new EMBERAsmBackend(STI, OSABI, Options);
 }

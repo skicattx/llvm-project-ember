@@ -81,6 +81,8 @@ class EMBERAsmParser : public MCTargetAsmParser
                                   int64_t Lower, int64_t Upper, Twine Msg);
 
 */
+//  bool parsePrimaryExpr(const MCExpr*& Res, SMLoc& EndLoc, AsmTypeInfo* TypeInfo) override;
+
   bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                OperandVector &Operands, MCStreamer &Out,
                                uint64_t &ErrorInfo,
@@ -228,14 +230,16 @@ public:
   static bool classifySymbolRef(const MCExpr *Expr,
                                 EMBERMCExpr::VariantKind &Kind);
 */
-  EMBERAsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser,
-                 const MCInstrInfo &MII, const MCTargetOptions &Options)
-      : MCTargetAsmParser(Options, STI, MII) {
-    Parser.addAliasForDirective(".half", ".2byte");
-    Parser.addAliasForDirective(".hword", ".2byte");
-    Parser.addAliasForDirective(".word", ".4byte");
-    Parser.addAliasForDirective(".dword", ".8byte");
-    setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
+    EMBERAsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser, const MCInstrInfo &MII, const MCTargetOptions &Options) : 
+        MCTargetAsmParser(Options, STI, MII) 
+    {
+        Parser.addAliasForDirective(".half", ".2byte");
+        Parser.addAliasForDirective(".hword", ".2byte");
+        Parser.addAliasForDirective(".word", ".4byte");
+        Parser.addAliasForDirective(".dword", ".8byte");
+
+        // No feature currently, add in td file when needed
+        setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
 
 //     auto ABIName = StringRef(Options.ABIName);
 //     if (ABIName.endswith("f") &&
@@ -250,9 +254,9 @@ public:
 //                 "target-abi)\n";
 //     }
 
-    const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
-    ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
-  }
+        const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
+        ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
+    }
 };
 
 /// EMBEROperand - Instances of this class represent a parsed machine instruction
@@ -1842,6 +1846,16 @@ bool EMBERAsmParser::ParseDirective(AsmToken DirectiveID) {
 //     return parseDirectiveOption();
 //   else if (IDVal == ".attribute")
 //     return parseDirectiveAttribute();
+
+//   MCAsmParser& Parser = getParser();
+// 
+//   // Get the option token.
+//   AsmToken Tok = Parser.getTok();
+// 
+//   Parser.Lex();
+// 
+//   AsmToken Tok2 = Parser.getTok();
+
 
   return true;
 }

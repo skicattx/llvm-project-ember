@@ -18,26 +18,26 @@ namespace llvm {
 class MCAssembler;
 class MCObjectTargetWriter;
 class raw_ostream;
-class EMBERAsmBackend : public MCAsmBackend {
-  const MCSubtargetInfo &STI;
-  const MCTargetOptions &TargetOptions;
+class EMBERAsmBackend : public MCAsmBackend 
+{
+    const MCSubtargetInfo &STI;
+    const MCTargetOptions &TargetOptions;
 /*
   uint8_t OSABI;
   bool ForceRelocs = false;
   EMBERABI::ABI TargetABI = EMBERABI::ABI_Unknown;
 */
 public:
-  EMBERAsmBackend(const MCSubtargetInfo &STI, uint8_t OSABI, const MCTargetOptions &Options)
-      : MCAsmBackend(support::little),
-      STI(STI), 
+    EMBERAsmBackend(const MCSubtargetInfo &STI, uint8_t OSABI, const MCTargetOptions &Options) :
+        MCAsmBackend(support::little),
+        STI(STI), 
 //       OSABI(OSABI),
-      TargetOptions(Options) 
-  {
-//     TargetABI = EMBERABI::computeTargetABI(
-//         STI.getTargetTriple(), STI.getFeatureBits(), Options.getABIName());
-//     EMBERFeatures::validate(STI.getTargetTriple(), STI.getFeatureBits());
-  }
-  ~EMBERAsmBackend() override {}
+        TargetOptions(Options) 
+    {
+//      TargetABI = EMBERABI::computeTargetABI(STI.getTargetTriple(), STI.getFeatureBits(), Options.getABIName());
+//      EMBERFeatures::validate(STI.getTargetTriple(), STI.getFeatureBits());
+    }
+    ~EMBERAsmBackend() override {}
 
   std::unique_ptr<MCObjectTargetWriter> createObjectTargetWriter() const override;
 
