@@ -29,7 +29,7 @@ include "EMBERInstrInfo.td"
 def EMBERInstrInfo : InstrInfo;
 
 def EMBERAsmParser : AsmParser {
-  bit ShouldEmitMatchRegisterName = 0;
+  bit ShouldEmitMatchRegisterName = 1;
 }
 
 //===----------------------------------------------------------------------===//

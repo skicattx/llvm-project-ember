@@ -49,7 +49,8 @@ using namespace llvm;
 
 // STATISTIC(EMBERNumInstrsCompressed,
 //           "Number of Ember Compressed instructions emitted");
-namespace {
+namespace 
+{
 struct EMBEROperand;
 
 struct ParserOptionsSet 
@@ -77,10 +78,10 @@ class EMBERAsmParser : public MCTargetAsmParser
   unsigned validateTargetOperandClass(MCParsedAsmOperand &Op,
                                       unsigned Kind) override;
 
+*/
   bool generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo,
                                   int64_t Lower, int64_t Upper, Twine Msg);
 
-*/
 //  bool parsePrimaryExpr(const MCExpr*& Res, SMLoc& EndLoc, AsmTypeInfo* TypeInfo) override;
 
   bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
@@ -95,11 +96,11 @@ class EMBERAsmParser : public MCTargetAsmParser
                         SMLoc NameLoc, OperandVector &Operands) override;
   bool ParseDirective(AsmToken DirectiveID) override;
 
-/*
   // Helper to actually emit an instruction to the MCStreamer. Also, when
   // possible, compression of the instruction is performed.
   void emitToStreamer(MCStreamer &S, const MCInst &Inst);
 
+/*
   // Helper to emit a combination of LUI, ADDI(W), and SLLI instructions that
   // synthesize the desired immedate value into the destination register.
   void emitLoadImm(MCRegister DestReg, int64_t Value, MCStreamer &Out);
@@ -140,28 +141,30 @@ class EMBERAsmParser : public MCTargetAsmParser
   // operand of PseudoAddTPRel results in a poor diagnostic due to the fact
   // 'add' is an overloaded mnemonic.
   bool checkPseudoAddTPRel(MCInst &Inst, OperandVector &Operands);
+*/
 
   // Check instruction constraints.
   bool validateInstruction(MCInst &Inst, OperandVector &Operands);
 
   /// Helper for processing MC instructions that have been successfully matched
   /// by MatchAndEmitInstruction. Modifications to the emitted instructions,
-  /// like the expansion of pseudo instructions (e.g., "li"), can be performed
-  /// in this method.
-  bool processInstruction(MCInst &Inst, SMLoc IDLoc, OperandVector &Operands,
-                          MCStreamer &Out);
-*/
-// Auto-generated instruction matching functions
+  /// like the expansion of pseudo instructions can be performed in this method.
+  bool processInstruction(MCInst &Inst, SMLoc IDLoc, OperandVector &Operands, MCStreamer &Out);
+
+  // Auto-generated instruction matching functions
 #define GET_ASSEMBLER_HEADER
 #include "EMBERGenAsmMatcher.inc"
 /*
   OperandMatchResultTy parseCSRSystemRegister(OperandVector &Operands);
+*/
+  OperandMatchResultTy parseRegister(OperandVector &Operands);
   OperandMatchResultTy parseImmediate(OperandVector &Operands);
-  OperandMatchResultTy parseRegister(OperandVector &Operands,
-                                     bool AllowParens = false);
   OperandMatchResultTy parseMemOpBaseReg(OperandVector &Operands);
+/*
   OperandMatchResultTy parseAtomicMemOp(OperandVector &Operands);
+  * /
   OperandMatchResultTy parseOperandWithModifier(OperandVector &Operands);
+  /*
   OperandMatchResultTy parseBareSymbol(OperandVector &Operands);
   OperandMatchResultTy parseCallSymbol(OperandVector &Operands);
   OperandMatchResultTy parsePseudoJumpSymbol(OperandVector &Operands);
@@ -219,12 +222,13 @@ class EMBERAsmParser : public MCTargetAsmParser
   std::unique_ptr<EMBEROperand> defaultMaskRegOp() const;
 */
 public:
-  enum EMBERMatchResultTy {
-    Match_Dummy = FIRST_TARGET_MATCH_RESULT_TY,
+    enum EMBERMatchResultTy
+    {
+        Match_Dummy = FIRST_TARGET_MATCH_RESULT_TY,
 #define GET_OPERAND_DIAGNOSTIC_TYPES
 #include "EMBERGenAsmMatcher.inc"
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
-  };
+    };
 
 /*
   static bool classifySymbolRef(const MCExpr *Expr,
@@ -260,70 +264,75 @@ public:
 };
 
 /// EMBEROperand - Instances of this class represent a parsed machine instruction
-struct EMBEROperand : public MCParsedAsmOperand {
+struct EMBEROperand : public MCParsedAsmOperand
+{
+    enum class KindTy 
+    {
+        Token,
+        Register,
+        Immediate,
+        UserRegister,
+//         VType,
+    } Kind;
 
-  enum class KindTy {
-    Token,
-    Register,
-    Immediate,
-    UserRegister,
-    VType,
-  } Kind;
+    struct RegOp 
+    {
+        MCRegister RegNum;
+    };
 
-  struct RegOp {
-    MCRegister RegNum;
-  };
+    struct UserRegOp 
+    {
+        MCRegister RegNum;
+    };
 
-  struct ImmOp {
-    const MCExpr *Val;
-  };
+    struct ImmOp 
+    {
+        const MCExpr *Val;
+    };
 
-  struct SysRegOp {
-    const char *Data;
-    unsigned Length;
-    unsigned Encoding;
-    // FIXME: Add the Encoding parsed fields as needed for checks,
-    // e.g.: read/write or user/supervisor/machine privileges.
-  };
+//     struct VTypeOp 
+//     {
+//         unsigned Val;
+//     };
 
-  struct VTypeOp {
-    unsigned Val;
-  };
+    SMLoc StartLoc;
+    SMLoc EndLoc;
+    union
+    {
+        StringRef   Tok;
+        RegOp       Reg;
+        UserRegOp   UserReg;
+        ImmOp       Imm;
+//         struct VTypeOp  VType;
+    };
 
-  SMLoc StartLoc, EndLoc;
-  union {
-    StringRef Tok;
-    RegOp Reg;
-    ImmOp Imm;
-    struct SysRegOp SysReg;
-    struct VTypeOp VType;
-  };
-
-  EMBEROperand(KindTy K) : MCParsedAsmOperand(), Kind(K) {}
+    EMBEROperand(KindTy K) : MCParsedAsmOperand(), Kind(K) {}
 
 public:
-  EMBEROperand(const EMBEROperand &o) : MCParsedAsmOperand() {
-    Kind = o.Kind;
-    StartLoc = o.StartLoc;
-    EndLoc = o.EndLoc;
-    switch (Kind) {
-    case KindTy::Register:
-      Reg = o.Reg;
-      break;
-    case KindTy::Immediate:
-      Imm = o.Imm;
-      break;
-    case KindTy::Token:
-      Tok = o.Tok;
-      break;
-    case KindTy::UserRegister:
-      SysReg = o.SysReg;
-      break;
-    case KindTy::VType:
-      VType = o.VType;
-      break;
+    EMBEROperand(const EMBEROperand& o) : MCParsedAsmOperand() 
+    {
+        Kind = o.Kind;
+        StartLoc = o.StartLoc;
+        EndLoc = o.EndLoc;
+        switch (Kind)
+        {
+            case KindTy::Register:
+              Reg = o.Reg;
+              break;
+            case KindTy::Immediate:
+              Imm = o.Imm;
+              break;
+            case KindTy::Token:
+              Tok = o.Tok;
+              break;
+            case KindTy::UserRegister:
+              UserReg = o.UserReg;
+              break;
+//             case KindTy::VType:
+//               VType = o.VType;
+//               break;
+        }
     }
-  }
 
   bool isToken() const override { return Kind == KindTy::Token; }
   bool isReg() const override { return Kind == KindTy::Register; }
@@ -333,7 +342,7 @@ public:
   bool isImm() const override { return Kind == KindTy::Immediate; }
   bool isMem() const override { return false; }
   bool isSystemRegister() const { return Kind == KindTy::UserRegister; }
-  bool isVType() const { return Kind == KindTy::VType; }
+//   bool isVType() const { return Kind == KindTy::VType; }
 
   bool isSImm14() const  { return Kind == KindTy::Immediate; /*TODO: one of these for each Imm bit count?*/ }
   bool isGPRAsmReg() const { return Kind == KindTy::Register; /*TODO: is this one of the u registers, or sp?*/}
@@ -418,7 +427,7 @@ public:
 
   bool isCSRSystemRegister() const { return isSystemRegister(); }
 
-  bool isVTypeI() const { return isVType(); }
+//   bool isVTypeI() const { return isVType(); }
 
   /// Return true if the operand is a valid for the fence instruction e.g.
   /// ('iorw').
@@ -712,9 +721,9 @@ public:
     return Reg.RegNum.id();
   }
 
-  StringRef getSysReg() const {
+  unsigned getUserReg() const {
     assert(Kind == KindTy::UserRegister && "Invalid type access!");
-    return StringRef(SysReg.Data, SysReg.Length);
+    return UserReg.RegNum.id();
   }
 
   const MCExpr *getImm() const {
@@ -727,10 +736,10 @@ public:
     return Tok;
   }
 
-  unsigned getVType() const {
-    assert(Kind == KindTy::VType && "Invalid type access!");
-    return VType.Val;
-  }
+//   unsigned getVType() const {
+//     assert(Kind == KindTy::VType && "Invalid type access!");
+//     return VType.Val;
+//   }
 
   void print(raw_ostream &OS) const override {
     auto RegName = [](unsigned Reg) {
@@ -751,60 +760,59 @@ public:
       OS << "'" << getToken() << "'";
       break;
     case KindTy::UserRegister:
-      OS << "<sysreg: " << getSysReg() << '>';
+      OS << "<sysreg: " << getUserReg() << '>';
       break;
-    case KindTy::VType:
-      OS << "<vtype: ";
-//       EMBERVType::printVType(getVType(), OS);
-      OS << '>';
-      break;
+//     case KindTy::VType:
+//       OS << "<vtype: ";
+// //       EMBERVType::printVType(getVType(), OS);
+//       OS << '>';
+//       break;
     }
   }
 
-  static std::unique_ptr<EMBEROperand> createToken(StringRef Str, SMLoc S)
-  {
-    auto Op = std::make_unique<EMBEROperand>(KindTy::Token);
-    Op->Tok = Str;
-    Op->StartLoc = S;
-    Op->EndLoc = S;
-    return Op;
-  }
+    static std::unique_ptr<EMBEROperand> createToken(StringRef Str, SMLoc S)
+    {
+        auto Op = std::make_unique<EMBEROperand>(KindTy::Token);
+        Op->Tok = Str;
+        Op->StartLoc = S;
+        Op->EndLoc = S;
+        return Op;
+    }
 
-  static std::unique_ptr<EMBEROperand> createReg(unsigned RegNo, SMLoc S)
-  {
-    auto Op = std::make_unique<EMBEROperand>(KindTy::Register);
-    Op->Reg.RegNum = RegNo;
-    Op->StartLoc = S;
-//     Op->EndLoc = E;
-    return Op;
-  }
+    static std::unique_ptr<EMBEROperand> createReg(unsigned RegNo, SMLoc S, SMLoc E)
+    {
+        auto Op = std::make_unique<EMBEROperand>(KindTy::Register);
+        Op->Reg.RegNum = RegNo;
+        Op->StartLoc = S;
+        Op->EndLoc = E;
+        return Op;
+    }
 
-  static std::unique_ptr<EMBEROperand> createImm(const MCExpr *Val, SMLoc S, SMLoc E)
-  {
-    auto Op = std::make_unique<EMBEROperand>(KindTy::Immediate);
-    Op->Imm.Val = Val;
-    Op->StartLoc = S;
-    Op->EndLoc = E;
-    return Op;
-  }
+    static std::unique_ptr<EMBEROperand> createImm(const MCExpr *Val, SMLoc S, SMLoc E)
+    {
+        auto Op = std::make_unique<EMBEROperand>(KindTy::Immediate);
+        Op->Imm.Val = Val;
+        Op->StartLoc = S;
+        Op->EndLoc = E;
+        return Op;
+    }
 
-  static std::unique_ptr<EMBEROperand> createUserReg(StringRef Str, SMLoc S, unsigned Encoding)
-  {
-    auto Op = std::make_unique<EMBEROperand>(KindTy::UserRegister);
-    Op->SysReg.Data = Str.data();
-    Op->SysReg.Length = Str.size();
-    Op->SysReg.Encoding = Encoding;
-    Op->StartLoc = S;
-    return Op;
-  }
+    static std::unique_ptr<EMBEROperand> createUserReg(unsigned RegNo, SMLoc S, SMLoc E)
+    {
+        auto Op = std::make_unique<EMBEROperand>(KindTy::UserRegister);
+        Op->Reg.RegNum = RegNo;
+        Op->StartLoc = S;
+        Op->EndLoc = E;
+        return Op;
+    }
 
-  static std::unique_ptr<EMBEROperand> createVType(unsigned VTypeI, SMLoc S)
-  {
-    auto Op = std::make_unique<EMBEROperand>(KindTy::VType);
-    Op->VType.Val = VTypeI;
-    Op->StartLoc = S;
-    return Op;
-  }
+//   static std::unique_ptr<EMBEROperand> createVType(unsigned VTypeI, SMLoc S)
+//   {
+//     auto Op = std::make_unique<EMBEROperand>(KindTy::VType);
+//     Op->VType.Val = VTypeI;
+//     Op->StartLoc = S;
+//     return Op;
+//   }
 
   void addExpr(MCInst &Inst, const MCExpr *Expr) const {
     assert(Expr && "Expr shouldn't be null!");
@@ -856,15 +864,15 @@ public:
     Inst.addOperand(MCOperand::createImm(Imm));
   }
 
-  void addCSRSystemRegisterOperands(MCInst &Inst, unsigned N) const {
-    assert(N == 1 && "Invalid number of operands!");
-    Inst.addOperand(MCOperand::createImm(SysReg.Encoding));
-  }
-
-  void addVTypeIOperands(MCInst &Inst, unsigned N) const {
-    assert(N == 1 && "Invalid number of operands!");
-    Inst.addOperand(MCOperand::createImm(getVType()));
-  }
+//   void addCSRSystemRegisterOperands(MCInst &Inst, unsigned N) const {
+//     assert(N == 1 && "Invalid number of operands!");
+//     Inst.addOperand(MCOperand::createImm(UserReg.Encoding));
+//   }
+// 
+//   void addVTypeIOperands(MCInst &Inst, unsigned N) const {
+//     assert(N == 1 && "Invalid number of operands!");
+//     Inst.addOperand(MCOperand::createImm(getVType()));
+//   }
 
   // Returns the rounding mode represented by this EMBEROperand. Should only
   // be called after checking isFRMArg.
@@ -954,98 +962,98 @@ unsigned EMBERAsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
   }
   return Match_InvalidOperand;
 }
+*/
 
-bool EMBERAsmParser::generateImmOutOfRangeError(
-    OperandVector &Operands, uint64_t ErrorInfo, int64_t Lower, int64_t Upper,
-    Twine Msg = "immediate must be an integer in the range") {
-  SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
-  return Error(ErrorLoc, Msg + " [" + Twine(Lower) + ", " + Twine(Upper) + "]");
+bool EMBERAsmParser::generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo, 
+                                                int64_t Lower, int64_t Upper,
+                                                Twine Msg = "immediate must be an integer in the range")
+{
+    SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
+    return Error(ErrorLoc, Msg + " [" + Twine(Lower) + ", " + Twine(Upper) + "]");
 }
 
-static std::string EMBERMnemonicSpellCheck(StringRef S,
-                                           const FeatureBitset &FBS,
-                                           unsigned VariantID = 0);
-*/
+static std::string EMBERMnemonicSpellCheck(StringRef S, const FeatureBitset &FBS, unsigned VariantID = 0);
+
 bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                              OperandVector &Operands,
                                              MCStreamer &Out,
                                              uint64_t &ErrorInfo,
                                              bool MatchingInlineAsm) 
 {
+    MCInst Inst;
+    FeatureBitset MissingFeatures;
+
+    auto Result = MatchInstructionImpl(Operands, Inst, ErrorInfo, MissingFeatures, MatchingInlineAsm);
+    switch (Result) 
+    {
+        default:
+            break;
+        case Match_Success:
+        {
+            if (validateInstruction(Inst, Operands))
+                return true;
+            return processInstruction(Inst, IDLoc, Operands, Out);
+        }
+        case Match_MissingFeature: 
+        {
+            assert(MissingFeatures.any() && "Unknown missing features!");
+            bool FirstFeature = true;
+            std::string Msg = "instruction requires the following:";
+            for (unsigned i = 0, e = MissingFeatures.size(); i != e; ++i) {
+              if (MissingFeatures[i]) {
+                Msg += FirstFeature ? " " : ", ";
+                Msg += getSubtargetFeatureName(i);
+                FirstFeature = false;
+              }
+            }
+            return Error(IDLoc, Msg);
+        }
+        case Match_MnemonicFail: 
+        {
+            FeatureBitset FBS = ComputeAvailableFeatures(getSTI().getFeatureBits());
+            std::string Suggestion = EMBERMnemonicSpellCheck(((EMBEROperand &)*Operands[0]).getToken(), FBS);
+            return Error(IDLoc, "unrecognized instruction mnemonic" + Suggestion);
+        }
+        case Match_InvalidOperand: 
+        {
+            SMLoc ErrorLoc = IDLoc;
+            if (ErrorInfo != ~0U)
+            {
+                if (ErrorInfo >= Operands.size())
+                    return Error(ErrorLoc, "too few operands for instruction");
+
+                ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
+                if (ErrorLoc == SMLoc())
+                    ErrorLoc = IDLoc;
+            }
+            return Error(ErrorLoc, "invalid operand for instruction");
+        }
+    }
+
+    // Handle the case when the error message is of specific type
+    // other than the generic Match_InvalidOperand, and the
+    // corresponding operand is missing.
+    if (Result > FIRST_TARGET_MATCH_RESULT_TY) 
+    {
+        SMLoc ErrorLoc = IDLoc;
+        if (ErrorInfo != ~0U && ErrorInfo >= Operands.size())
+            return Error(ErrorLoc, "too few operands for instruction");
+    }
+
+    switch (Result) 
+    {
+        default:
+            break;
+        case Match_InvalidSImm14:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 12), (1 << 12) - 1);
 /*
-  MCInst Inst;
-  FeatureBitset MissingFeatures;
-
-  auto Result = MatchInstructionImpl(Operands, Inst, ErrorInfo, MissingFeatures,
-                                     MatchingInlineAsm);
-  switch (Result) {
-  default:
-    break;
-  case Match_Success:
-    if (validateInstruction(Inst, Operands))
-      return true;
-    return processInstruction(Inst, IDLoc, Operands, Out);
-  case Match_MissingFeature: {
-    assert(MissingFeatures.any() && "Unknown missing features!");
-    bool FirstFeature = true;
-    std::string Msg = "instruction requires the following:";
-    for (unsigned i = 0, e = MissingFeatures.size(); i != e; ++i) {
-      if (MissingFeatures[i]) {
-        Msg += FirstFeature ? " " : ", ";
-        Msg += getSubtargetFeatureName(i);
-        FirstFeature = false;
-      }
+    case Match_InvalidImmZero: 
+    {
+        SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
+        return Error(ErrorLoc, "immediate must be zero");
     }
-    return Error(IDLoc, Msg);
-  }
-  case Match_MnemonicFail: {
-    FeatureBitset FBS = ComputeAvailableFeatures(getSTI().getFeatureBits());
-    std::string Suggestion =
-        EMBERMnemonicSpellCheck(((EMBEROperand &)*Operands[0]).getToken(), FBS);
-    return Error(IDLoc, "unrecognized instruction mnemonic" + Suggestion);
-  }
-  case Match_InvalidOperand: {
-    SMLoc ErrorLoc = IDLoc;
-    if (ErrorInfo != ~0U) {
-      if (ErrorInfo >= Operands.size())
-        return Error(ErrorLoc, "too few operands for instruction");
-
-      ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
-      if (ErrorLoc == SMLoc())
-        ErrorLoc = IDLoc;
-    }
-    return Error(ErrorLoc, "invalid operand for instruction");
-  }
-  }
-
-  // Handle the case when the error message is of specific type
-  // other than the generic Match_InvalidOperand, and the
-  // corresponding operand is missing.
-  if (Result > FIRST_TARGET_MATCH_RESULT_TY) {
-    SMLoc ErrorLoc = IDLoc;
-    if (ErrorInfo != ~0U && ErrorInfo >= Operands.size())
-      return Error(ErrorLoc, "too few operands for instruction");
-  }
-
-  switch (Result) {
-  default:
-    break;
-  case Match_InvalidImmXLenLI:
-    if (isRV64()) {
-      SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
-      return Error(ErrorLoc, "operand must be a constant 64-bit integer");
-    }
-    return generateImmOutOfRangeError(Operands, ErrorInfo,
-                                      std::numeric_limits<int32_t>::min(),
-                                      std::numeric_limits<uint32_t>::max());
-  case Match_InvalidImmZero: {
-    SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
-    return Error(ErrorLoc, "immediate must be zero");
-  }
-  case Match_InvalidUImmLog2XLen:
-    if (isRV64())
-      return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 6) - 1);
-    return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 5) - 1);
+    case Match_InvalidUImmLog2XLen:
+        return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 5) - 1);
   case Match_InvalidUImmLog2XLenNonZero:
     if (isRV64())
       return generateImmOutOfRangeError(Operands, ErrorInfo, 1, (1 << 6) - 1);
@@ -1175,33 +1183,12 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                       (1 << 4),
                                       "immediate must be in the range");
   }
-  }
+*/
+    }
 
-*/
-  llvm_unreachable("Unknown match type detected!");
+    llvm_unreachable("Unknown match type detected!");
 }
-/*
-// Attempts to match Name as a register (either using the default name or
-// alternative ABI names), setting RegNo to the matching register. Upon
-// failure, returns true and sets RegNo to 0. If IsRV32E then registers
-// x16-x31 will be rejected.
-static bool matchRegisterNameHelper(bool IsRV32E, MCRegister &RegNo,
-                                    StringRef Name) {
-  RegNo = MatchRegisterName(Name);
-  // The 16-/32- and 64-bit FPRs have the same asm name. Check that the initial
-  // match always matches the 64-bit variant, and not the 16/32-bit one.
-  assert(!(RegNo >= EMBER::F0_H && RegNo <= EMBER::F31_H));
-  assert(!(RegNo >= EMBER::F0_F && RegNo <= EMBER::F31_F));
-  // The default FPR register class is based on the tablegen enum ordering.
-  static_assert(EMBER::F0_D < EMBER::F0_H, "FPR matching must be updated");
-  static_assert(EMBER::F0_D < EMBER::F0_F, "FPR matching must be updated");
-  if (RegNo == EMBER::NoRegister)
-    RegNo = MatchRegisterAltName(Name);
-  if (IsRV32E && RegNo >= EMBER::X16 && RegNo <= EMBER::X31)
-    RegNo = EMBER::NoRegister;
-  return RegNo == EMBER::NoRegister;
-}
-*/
+
 bool EMBERAsmParser::ParseRegister(unsigned &RegNo, SMLoc &StartLoc,
                                    SMLoc &EndLoc) {
   if (tryParseRegister(RegNo, StartLoc, EndLoc) != MatchOperand_Success)
@@ -1215,65 +1202,38 @@ OperandMatchResultTy EMBERAsmParser::tryParseRegister(unsigned &RegNo,
   const AsmToken &Tok = getParser().getTok();
   StartLoc = Tok.getLoc();
   EndLoc = Tok.getEndLoc();
-  RegNo = 0;
   StringRef Name = getLexer().getTok().getIdentifier();
+  RegNo = MatchRegisterName(Name);
 
-//   if (matchRegisterNameHelper(isRV32E(), (MCRegister &)RegNo, Name))
-//     return MatchOperand_NoMatch;
+  if (RegNo == EMBER::NoRegister)
+     return MatchOperand_NoMatch;
 
   getParser().Lex(); // Eat identifier token.
   return MatchOperand_Success;
 }
-/*
-OperandMatchResultTy EMBERAsmParser::parseRegister(OperandVector &Operands,
-                                                   bool AllowParens) {
-  SMLoc FirstS = getLoc();
-  bool HadParens = false;
-  AsmToken LParen;
 
-  // If this is an LParen and a parenthesised register name is allowed, parse it
-  // atomically.
-  if (AllowParens && getLexer().is(AsmToken::LParen)) {
-    AsmToken Buf[2];
-    size_t ReadCount = getLexer().peekTokens(Buf);
-    if (ReadCount == 2 && Buf[1].getKind() == AsmToken::RParen) {
-      HadParens = true;
-      LParen = getParser().getTok();
-      getParser().Lex(); // Eat '('
+OperandMatchResultTy EMBERAsmParser::parseRegister(OperandVector &Operands) 
+{
+    if (getLexer().getKind() == AsmToken::Identifier)
+    {
+        StringRef Name = getLexer().getTok().getIdentifier();
+        MCRegister RegNo = MatchRegisterName(Name);
+        if (RegNo == EMBER::NoRegister)
+            return MatchOperand_NoMatch;
+
+        SMLoc S = getLoc();
+        SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+        getLexer().Lex();
+        if (Name.front() == 'u')
+            Operands.push_back(EMBEROperand::createUserReg(RegNo, S, E));
+        else
+            Operands.push_back(EMBEROperand::createReg(RegNo, S, E));
+        return MatchOperand_Success;
     }
-  }
 
-  switch (getLexer().getKind()) {
-  default:
-    if (HadParens)
-      getLexer().UnLex(LParen);
     return MatchOperand_NoMatch;
-  case AsmToken::Identifier:
-    StringRef Name = getLexer().getTok().getIdentifier();
-    MCRegister RegNo;
-    matchRegisterNameHelper(isRV32E(), RegNo, Name);
-
-    if (RegNo == EMBER::NoRegister) {
-      if (HadParens)
-        getLexer().UnLex(LParen);
-      return MatchOperand_NoMatch;
-    }
-    if (HadParens)
-      Operands.push_back(EMBEROperand::createToken("(", FirstS, isRV64()));
-    SMLoc S = getLoc();
-    SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
-    getLexer().Lex();
-    Operands.push_back(EMBEROperand::createReg(RegNo, S, E, isRV64()));
-  }
-
-  if (HadParens) {
-    getParser().Lex(); // Eat ')'
-    Operands.push_back(EMBEROperand::createToken(")", getLoc(), isRV64()));
-  }
-
-  return MatchOperand_Success;
 }
-
+/*
 OperandMatchResultTy
 EMBERAsmParser::parseCSRSystemRegister(OperandVector &Operands) {
   SMLoc S = getLoc();
@@ -1343,35 +1303,38 @@ EMBERAsmParser::parseCSRSystemRegister(OperandVector &Operands) {
 
   return MatchOperand_NoMatch;
 }
+*/
 
-OperandMatchResultTy EMBERAsmParser::parseImmediate(OperandVector &Operands) {
-  SMLoc S = getLoc();
-  SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
-  const MCExpr *Res;
+OperandMatchResultTy EMBERAsmParser::parseImmediate(OperandVector &Operands) 
+{
+    SMLoc S = getLoc();
+    SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+    const MCExpr *Res;
 
-  switch (getLexer().getKind()) {
-  default:
-    return MatchOperand_NoMatch;
-  case AsmToken::LParen:
-  case AsmToken::Dot:
-  case AsmToken::Minus:
-  case AsmToken::Plus:
-  case AsmToken::Exclaim:
-  case AsmToken::Tilde:
-  case AsmToken::Integer:
-  case AsmToken::String:
-  case AsmToken::Identifier:
-    if (getParser().parseExpression(Res))
-      return MatchOperand_ParseFail;
-    break;
-  case AsmToken::Percent:
-    return parseOperandWithModifier(Operands);
-  }
+    switch (getLexer().getKind())
+    {
+        default:
+            return MatchOperand_NoMatch;
+        case AsmToken::LParen:
+        case AsmToken::Dot:
+        case AsmToken::Minus:
+        case AsmToken::Plus:
+        case AsmToken::Exclaim:
+        case AsmToken::Tilde:
+        case AsmToken::Integer:
+        case AsmToken::String:
+        case AsmToken::Identifier:
+        case AsmToken::Percent:
+            if (getParser().parseExpression(Res))
+                return MatchOperand_ParseFail;
+            break;
+    }
 
-  Operands.push_back(EMBEROperand::createImm(Res, S, E, isRV64()));
-  return MatchOperand_Success;
+    Operands.push_back(EMBEROperand::createImm(Res, S, E));
+    return MatchOperand_Success;
 }
 
+/*
 OperandMatchResultTy
 EMBERAsmParser::parseOperandWithModifier(OperandVector &Operands) {
   SMLoc S = getLoc();
@@ -1411,7 +1374,6 @@ EMBERAsmParser::parseOperandWithModifier(OperandVector &Operands) {
   Operands.push_back(EMBEROperand::createImm(ModExpr, S, E, isRV64()));
   return MatchOperand_Success;
 }
-
 OperandMatchResultTy EMBERAsmParser::parseBareSymbol(OperandVector &Operands) {
   SMLoc S = getLoc();
   SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
@@ -1636,33 +1598,46 @@ OperandMatchResultTy EMBERAsmParser::parseMaskReg(OperandVector &Operands) {
 
   return MatchOperand_Success;
 }
+*/
+OperandMatchResultTy EMBERAsmParser::parseMemOpBaseReg(OperandVector &Operands) 
+{
+    if (getLexer().isNot(AsmToken::LParen)) 
+    {
+        Error(getLoc(), "expected '('");
+        return MatchOperand_ParseFail;
+    }
 
-OperandMatchResultTy
-EMBERAsmParser::parseMemOpBaseReg(OperandVector &Operands) {
-  if (getLexer().isNot(AsmToken::LParen)) {
-    Error(getLoc(), "expected '('");
-    return MatchOperand_ParseFail;
-  }
+    getParser().Lex(); // Eat '('
+    Operands.push_back(EMBEROperand::createToken("(", getLoc()));
 
-  getParser().Lex(); // Eat '('
-  Operands.push_back(EMBEROperand::createToken("(", getLoc(), isRV64()));
+    if (parseRegister(Operands) != MatchOperand_Success)
+    {
+        Error(getLoc(), "expected register");
+        return MatchOperand_ParseFail;
+    }
 
-  if (parseRegister(Operands) != MatchOperand_Success) {
-    Error(getLoc(), "expected register");
-    return MatchOperand_ParseFail;
-  }
+    if (getLexer().is(AsmToken::Plus) || getLexer().is(AsmToken::Minus))
+    {
+        getParser().Lex(); // Eat '+ or -'
 
-  if (getLexer().isNot(AsmToken::RParen)) {
-    Error(getLoc(), "expected ')'");
-    return MatchOperand_ParseFail;
-  }
+        // TODO: parse Imm offset inside address
+        Error(getLoc(), "need to handle imm offset in address");
 
-  getParser().Lex(); // Eat ')'
-  Operands.push_back(EMBEROperand::createToken(")", getLoc(), isRV64()));
+        return MatchOperand_ParseFail;
+    }
 
-  return MatchOperand_Success;
+    if (getLexer().isNot(AsmToken::RParen)) 
+    {
+        Error(getLoc(), "expected ')'");
+        return MatchOperand_ParseFail;
+    }
+
+    getParser().Lex(); // Eat ')'
+    Operands.push_back(EMBEROperand::createToken(")", getLoc()));
+
+    return MatchOperand_Success;
 }
-
+/*
 OperandMatchResultTy EMBERAsmParser::parseAtomicMemOp(OperandVector &Operands) {
   // Atomic operations such as lr.w, sc.w, and amo*.w accept a "memory operand"
   // as one of their register operands, such as `(a0)`. This just denotes that
@@ -1734,88 +1709,67 @@ OperandMatchResultTy EMBERAsmParser::parseAtomicMemOp(OperandVector &Operands) {
 /// Looks at a token type and creates the relevant operand from this
 /// information, adding to Operands. If operand was parsed, returns false, else
 /// true.
-bool EMBERAsmParser::parseOperand(OperandVector &Operands, StringRef Mnemonic) {
-  // Check if the current operand has a custom associated parser, if so, try to
-  // custom parse the operand, or fallback to the general approach.
-/*
-  OperandMatchResultTy Result =
-      MatchOperandParserImpl(Operands, Mnemonic, true);
-  if (Result == MatchOperand_Success)
-    return false;
-  if (Result == MatchOperand_ParseFail)
-    return true;
+bool EMBERAsmParser::parseOperand(OperandVector &Operands, 
+                                  StringRef      Mnemonic) 
+{
+    // Attempt to parse token as a register.
+    if (parseRegister(Operands) == MatchOperand_Success)
+        return false;
 
-  // Attempt to parse token as a register.
-  if (parseRegister(Operands, true) == MatchOperand_Success)
-    return false;
+    // Attempt to parse token as an immediate
+    if (parseImmediate(Operands) == MatchOperand_Success) 
+        return false;
 
-  // Attempt to parse token as an immediate
-  if (parseImmediate(Operands) == MatchOperand_Success) {
-    // Parse memory base register if present
+    // Attempt to parse as address
     if (getLexer().is(AsmToken::LParen))
-      return parseMemOpBaseReg(Operands) != MatchOperand_Success;
-    return false;
-  }
-*/
-
-  // Finally we have exhausted all options and must declare defeat.
-  Error(getLoc(), "unknown operand");
-  return true;
-}
-bool EMBERAsmParser::ParseInstruction(ParseInstructionInfo &Info,
-                                      StringRef Name, SMLoc NameLoc,
-                                      OperandVector &Operands) {
-  // Ensure that if the instruction occurs when relaxation is enabled,
-  // relocations are forced for the file. Ideally this would be done when there
-  // is enough information to reliably determine if the instruction itself may
-  // cause relaxations. Unfortunately instruction processing stage occurs in the
-  // same pass as relocation emission, so it's too late to set a 'sticky bit'
-  // for the entire file.
-
-/*
-  if (getSTI().getFeatureBits()[EMBER::FeatureRelax]) {
-    auto *Assembler = getTargetStreamer().getStreamer().getAssemblerPtr();
-    if (Assembler != nullptr) {
-      EMBERAsmBackend &MAB =
-          static_cast<EMBERAsmBackend &>(Assembler->getBackend());
-      MAB.setForceRelocs();
-    }
-  }
-*/
-
-
-  // First operand is token for instruction
-  Operands.push_back(EMBEROperand::createToken(Name, NameLoc));
-
-  // If there are no more operands, then finish
-  if (getLexer().is(AsmToken::EndOfStatement))
-    return false;
-
-  // Parse first operand
-  if (parseOperand(Operands, Name))
+        return parseMemOpBaseReg(Operands) != MatchOperand_Success;
+    
+    // Finally we have exhausted all options and must declare defeat.
+    Error(getLoc(), "unknown operand");
     return true;
+}
 
-  // Parse until end of statement, consuming commas between operands
-  unsigned OperandIdx = 1;
-  while (getLexer().is(AsmToken::Comma)) {
-    // Consume comma token
-    getLexer().Lex();
+bool EMBERAsmParser::ParseInstruction(ParseInstructionInfo &Info,
+                                      StringRef             Name, 
+                                      SMLoc                 NameLoc,
+                                      OperandVector        &Operands)
+{
+    // First operand is token for instruction
+    Operands.push_back(EMBEROperand::createToken(Name, NameLoc));
 
-    // Parse next operand
+    // If there are no more operands, then finish
+    if (getLexer().is(AsmToken::EndOfStatement))
+        return false;
+
+    // Parse first operand
     if (parseOperand(Operands, Name))
-      return true;
+        return true;
 
-    ++OperandIdx;
-  }
+    // TODO: ( for st* or ld*? Maybe done in ParseOp?
 
-  if (getLexer().isNot(AsmToken::EndOfStatement)) {
-    SMLoc Loc = getLexer().getLoc();
-    getParser().eatToEndOfStatement();
-    return Error(Loc, "unexpected token");
-  }
+    // Parse until end of statement, consuming commas between operands
+    unsigned OperandIdx = 1;
+    while (getLexer().is(AsmToken::Comma))
+    {
+        // Consume comma token
+        getLexer().Lex();
 
-  getParser().Lex(); // Consume the EndOfStatement.
-  return false;
+        // Parse next operand
+        if (parseOperand(Operands, Name))
+            return true;
+
+        ++OperandIdx;
+    }
+
+    if (getLexer().isNot(AsmToken::EndOfStatement)) 
+    {
+        SMLoc Loc = getLexer().getLoc();
+        getParser().eatToEndOfStatement();
+        return Error(Loc, "unexpected token");
+    }
+
+    getParser().Lex(); // Consume the EndOfStatement.
+    return false;
 }
 
 /*
@@ -2218,15 +2172,18 @@ bool EMBERAsmParser::parseDirectiveAttribute() {
 
   return false;
 }
+*/
 
-void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst) {
-  MCInst CInst;
-  bool Res = compressInst(CInst, Inst, getSTI(), S.getContext());
-  if (Res)
-    ++EMBERNumInstrsCompressed;
-  S.emitInstruction((Res ? CInst : Inst), getSTI());
+void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst)
+{
+    MCInst CInst;
+//   bool Res = compressInst(CInst, Inst, getSTI(), S.getContext());
+//   if (Res)
+//     ++EMBERNumInstrsCompressed;
+    S.emitInstruction(Inst, getSTI());
 }
 
+/*
 void EMBERAsmParser::emitLoadImm(MCRegister DestReg, int64_t Value,
                                  MCStreamer &Out) {
   EMBERMatInt::InstSeq Seq = EMBERMatInt::generateInstSeq(Value, isRV64());
@@ -2486,235 +2443,244 @@ std::unique_ptr<EMBEROperand> EMBERAsmParser::defaultMaskRegOp() const {
   return EMBEROperand::createReg(EMBER::NoRegister, llvm::SMLoc(),
                                  llvm::SMLoc(), isRV64());
 }
-
-bool EMBERAsmParser::validateInstruction(MCInst &Inst,
-                                         OperandVector &Operands) {
-  if (Inst.getOpcode() == EMBER::PseudoVMSGEU_VX_M_T ||
-      Inst.getOpcode() == EMBER::PseudoVMSGE_VX_M_T) {
-    unsigned DestReg = Inst.getOperand(0).getReg();
-    unsigned TempReg = Inst.getOperand(1).getReg();
-    if (DestReg == TempReg) {
-      SMLoc Loc = Operands.back()->getStartLoc();
-      return Error(Loc, "The temporary vector register cannot be the same as "
-                        "the destination register.");
-    }
-  }
-
-  const MCInstrDesc &MCID = MII.get(Inst.getOpcode());
-  unsigned Constraints =
-      (MCID.TSFlags & EMBERII::ConstraintMask) >> EMBERII::ConstraintShift;
-  if (Constraints == EMBERII::NoConstraint)
-    return false;
-
-  unsigned DestReg = Inst.getOperand(0).getReg();
-  // Operands[1] will be the first operand, DestReg.
-  SMLoc Loc = Operands[1]->getStartLoc();
-  if (Constraints & EMBERII::VS2Constraint) {
-    unsigned CheckReg = Inst.getOperand(1).getReg();
-    if (DestReg == CheckReg)
-      return Error(Loc, "The destination vector register group cannot overlap"
-                        " the source vector register group.");
-  }
-  if ((Constraints & EMBERII::VS1Constraint) && (Inst.getOperand(2).isReg())) {
-    unsigned CheckReg = Inst.getOperand(2).getReg();
-    if (DestReg == CheckReg)
-      return Error(Loc, "The destination vector register group cannot overlap"
-                        " the source vector register group.");
-  }
-  if ((Constraints & EMBERII::VMConstraint) && (DestReg == EMBER::V0)) {
-    // vadc, vsbc are special cases. These instructions have no mask register.
-    // The destination register could not be V0.
-    unsigned Opcode = Inst.getOpcode();
-    if (Opcode == EMBER::VADC_VVM || Opcode == EMBER::VADC_VXM ||
-        Opcode == EMBER::VADC_VIM || Opcode == EMBER::VSBC_VVM ||
-        Opcode == EMBER::VSBC_VXM || Opcode == EMBER::VFMERGE_VFM ||
-        Opcode == EMBER::VMERGE_VIM || Opcode == EMBER::VMERGE_VVM ||
-        Opcode == EMBER::VMERGE_VXM)
-      return Error(Loc, "The destination vector register group cannot be V0.");
-
-    // Regardless masked or unmasked version, the number of operands is the
-    // same. For example, "viota.m v0, v2" is "viota.m v0, v2, NoRegister"
-    // actually. We need to check the last operand to ensure whether it is
-    // masked or not.
-    unsigned CheckReg = Inst.getOperand(Inst.getNumOperands() - 1).getReg();
-    assert((CheckReg == EMBER::V0 || CheckReg == EMBER::NoRegister) &&
-           "Unexpected register for mask operand");
-
-    if (DestReg == CheckReg)
-      return Error(Loc, "The destination vector register group cannot overlap"
-                        " the mask register.");
-  }
-  return false;
-}
-
-bool EMBERAsmParser::processInstruction(MCInst &Inst, SMLoc IDLoc,
-                                        OperandVector &Operands,
-                                        MCStreamer &Out) {
-  Inst.setLoc(IDLoc);
-
-  switch (Inst.getOpcode()) {
-  default:
-    break;
-  case EMBER::PseudoLI: {
-    MCRegister Reg = Inst.getOperand(0).getReg();
-    const MCOperand &Op1 = Inst.getOperand(1);
-    if (Op1.isExpr()) {
-      // We must have li reg, %lo(sym) or li reg, %pcrel_lo(sym) or similar.
-      // Just convert to an addi. This allows compatibility with gas.
-      emitToStreamer(Out, MCInstBuilder(EMBER::ADDI)
-                              .addReg(Reg)
-                              .addReg(EMBER::X0)
-                              .addExpr(Op1.getExpr()));
-      return false;
-    }
-    int64_t Imm = Inst.getOperand(1).getImm();
-    // On RV32 the immediate here can either be a signed or an unsigned
-    // 32-bit number. Sign extension has to be performed to ensure that Imm
-    // represents the expected signed 64-bit number.
-    if (!isRV64())
-      Imm = SignExtend64<32>(Imm);
-    emitLoadImm(Reg, Imm, Out);
-    return false;
-  }
-  case EMBER::PseudoLLA:
-    emitLoadLocalAddress(Inst, IDLoc, Out);
-    return false;
-  case EMBER::PseudoLA:
-    emitLoadAddress(Inst, IDLoc, Out);
-    return false;
-  case EMBER::PseudoLA_TLS_IE:
-    emitLoadTLSIEAddress(Inst, IDLoc, Out);
-    return false;
-  case EMBER::PseudoLA_TLS_GD:
-    emitLoadTLSGDAddress(Inst, IDLoc, Out);
-    return false;
-  case EMBER::PseudoLB:
-    emitLoadStoreSymbol(Inst, EMBER::LB, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLBU:
-    emitLoadStoreSymbol(Inst, EMBER::LBU, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLH:
-    emitLoadStoreSymbol(Inst, EMBER::LH, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLHU:
-    emitLoadStoreSymbol(Inst, EMBER::LHU, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLW:
-    emitLoadStoreSymbol(Inst, EMBER::LW, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLWU:
-    emitLoadStoreSymbol(Inst, EMBER::LWU, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoLD:
-    emitLoadStoreSymbol(Inst, EMBER::LD, IDLoc, Out, false);
-    return false;
-  case EMBER::PseudoFLH:
-    emitLoadStoreSymbol(Inst, EMBER::FLH, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoFLW:
-    emitLoadStoreSymbol(Inst, EMBER::FLW, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoFLD:
-    emitLoadStoreSymbol(Inst, EMBER::FLD, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoSB:
-    emitLoadStoreSymbol(Inst, EMBER::SB, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoSH:
-    emitLoadStoreSymbol(Inst, EMBER::SH, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoSW:
-    emitLoadStoreSymbol(Inst, EMBER::SW, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoSD:
-    emitLoadStoreSymbol(Inst, EMBER::SD, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoFSH:
-    emitLoadStoreSymbol(Inst, EMBER::FSH, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoFSW:
-    emitLoadStoreSymbol(Inst, EMBER::FSW, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoFSD:
-    emitLoadStoreSymbol(Inst, EMBER::FSD, IDLoc, Out, true);
-    return false;
-  case EMBER::PseudoAddTPRel:
-    if (checkPseudoAddTPRel(Inst, Operands))
-      return true;
-    break;
-  case EMBER::PseudoSEXT_B:
-    emitPseudoExtend(Inst, true, 8, IDLoc, Out);
-    return false;
-  case EMBER::PseudoSEXT_H:
-    emitPseudoExtend(Inst, true, 16, IDLoc, Out);
-    return false;
-  case EMBER::PseudoZEXT_H:
-    emitPseudoExtend(Inst, false, 16, IDLoc, Out);
-    return false;
-  case EMBER::PseudoZEXT_W:
-    emitPseudoExtend(Inst, false, 32, IDLoc, Out);
-    return false;
-  case EMBER::PseudoVMSGEU_VX:
-  case EMBER::PseudoVMSGEU_VX_M:
-  case EMBER::PseudoVMSGEU_VX_M_T:
-    emitVMSGE(Inst, EMBER::VMSLTU_VX, IDLoc, Out);
-    return false;
-  case EMBER::PseudoVMSGE_VX:
-  case EMBER::PseudoVMSGE_VX_M:
-  case EMBER::PseudoVMSGE_VX_M_T:
-    emitVMSGE(Inst, EMBER::VMSLT_VX, IDLoc, Out);
-    return false;
-  case EMBER::PseudoVMSGE_VI:
-  case EMBER::PseudoVMSLT_VI: {
-    // These instructions are signed and so is immediate so we can subtract one
-    // and change the opcode.
-    int64_t Imm = Inst.getOperand(2).getImm();
-    unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGE_VI ? EMBER::VMSGT_VI
-                                                             : EMBER::VMSLE_VI;
-    emitToStreamer(Out, MCInstBuilder(Opc)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(1))
-                            .addImm(Imm - 1)
-                            .addOperand(Inst.getOperand(3)));
-    return false;
-  }
-  case EMBER::PseudoVMSGEU_VI:
-  case EMBER::PseudoVMSLTU_VI: {
-    int64_t Imm = Inst.getOperand(2).getImm();
-    // Unsigned comparisons are tricky because the immediate is signed. If the
-    // immediate is 0 we can't just subtract one. vmsltu.vi v0, v1, 0 is always
-    // false, but vmsle.vi v0, v1, -1 is always true. Instead we use
-    // vmsne v0, v1, v1 which is always false.
-    if (Imm == 0) {
-      unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
-                         ? EMBER::VMSEQ_VV
-                         : EMBER::VMSNE_VV;
-      emitToStreamer(Out, MCInstBuilder(Opc)
-                              .addOperand(Inst.getOperand(0))
-                              .addOperand(Inst.getOperand(1))
-                              .addOperand(Inst.getOperand(1))
-                              .addOperand(Inst.getOperand(3)));
-    } else {
-      // Other immediate values can subtract one like signed.
-      unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
-                         ? EMBER::VMSGTU_VI
-                         : EMBER::VMSLEU_VI;
-      emitToStreamer(Out, MCInstBuilder(Opc)
-                              .addOperand(Inst.getOperand(0))
-                              .addOperand(Inst.getOperand(1))
-                              .addImm(Imm - 1)
-                              .addOperand(Inst.getOperand(3)));
-    }
-
-    return false;
-  }
-  }
-
-  emitToStreamer(Out, Inst);
-  return false;
-}
 */
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERAsmParser() {
-  RegisterMCAsmParser<EMBERAsmParser> X(getTheEMBER32Target());
+bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands) 
+{
+//   if (Inst.getOpcode() == EMBER::PseudoVMSGEU_VX_M_T || Inst.getOpcode() == EMBER::PseudoVMSGE_VX_M_T) 
+//   {
+//     unsigned DestReg = Inst.getOperand(0).getReg();
+//     unsigned TempReg = Inst.getOperand(1).getReg();
+//     if (DestReg == TempReg) {
+//       SMLoc Loc = Operands.back()->getStartLoc();
+//       return Error(Loc, "The temporary vector register cannot be the same as "
+//                         "the destination register.");
+//     }
+//   }
+
+//   const MCInstrDesc &MCID = MII.get(Inst.getOpcode());
+//   unsigned Constraints =
+//       (MCID.TSFlags & EMBERII::ConstraintMask) >> EMBERII::ConstraintShift;
+//   if (Constraints == EMBERII::NoConstraint)
+//     return false;
+
+//   unsigned DestReg = Inst.getOperand(0).getReg();
+//   // Operands[1] will be the first operand, DestReg.
+//   SMLoc Loc = Operands[1]->getStartLoc();
+//   if (Constraints & EMBERII::VS2Constraint) {
+//     unsigned CheckReg = Inst.getOperand(1).getReg();
+//     if (DestReg == CheckReg)
+//       return Error(Loc, "The destination vector register group cannot overlap"
+//                         " the source vector register group.");
+//   }
+//   if ((Constraints & EMBERII::VS1Constraint) && (Inst.getOperand(2).isReg())) {
+//     unsigned CheckReg = Inst.getOperand(2).getReg();
+//     if (DestReg == CheckReg)
+//       return Error(Loc, "The destination vector register group cannot overlap"
+//                         " the source vector register group.");
+//   }
+//   if ((Constraints & EMBERII::VMConstraint) && (DestReg == EMBER::V0)) {
+//     // vadc, vsbc are special cases. These instructions have no mask register.
+//     // The destination register could not be V0.
+//     unsigned Opcode = Inst.getOpcode();
+//     if (Opcode == EMBER::VADC_VVM || Opcode == EMBER::VADC_VXM ||
+//         Opcode == EMBER::VADC_VIM || Opcode == EMBER::VSBC_VVM ||
+//         Opcode == EMBER::VSBC_VXM || Opcode == EMBER::VFMERGE_VFM ||
+//         Opcode == EMBER::VMERGE_VIM || Opcode == EMBER::VMERGE_VVM ||
+//         Opcode == EMBER::VMERGE_VXM)
+//       return Error(Loc, "The destination vector register group cannot be V0.");
+// 
+//     // Regardless masked or unmasked version, the number of operands is the
+//     // same. For example, "viota.m v0, v2" is "viota.m v0, v2, NoRegister"
+//     // actually. We need to check the last operand to ensure whether it is
+//     // masked or not.
+//     unsigned CheckReg = Inst.getOperand(Inst.getNumOperands() - 1).getReg();
+//     assert((CheckReg == EMBER::V0 || CheckReg == EMBER::NoRegister) &&
+//            "Unexpected register for mask operand");
+// 
+//     if (DestReg == CheckReg)
+//       return Error(Loc, "The destination vector register group cannot overlap"
+//                         " the mask register.");
+//   }
+  return false;
+}
+
+bool EMBERAsmParser::processInstruction(MCInst         &Inst, 
+                                        SMLoc           IDLoc,
+                                        OperandVector  &Operands,
+                                        MCStreamer     &Out) 
+{
+    Inst.setLoc(IDLoc);
+
+    // Emit pseudo and opcodes that can't be built in the tb code
+/*
+    switch (Inst.getOpcode()) 
+    {
+        default:
+            break;
+        case EMBER::PseudoLI: 
+        {
+            MCRegister Reg = Inst.getOperand(0).getReg();
+            const MCOperand &Op1 = Inst.getOperand(1);
+            if (Op1.isExpr()) 
+            {
+              // We must have li reg, %lo(sym) or li reg, %pcrel_lo(sym) or similar.
+              // Just convert to an addi. This allows compatibility with gas.
+              emitToStreamer(Out, MCInstBuilder(EMBER::ADDI)
+                                      .addReg(Reg)
+                                      .addReg(EMBER::X0)
+                                      .addExpr(Op1.getExpr()));
+              return false;
+            }
+            int64_t Imm = Inst.getOperand(1).getImm();
+            // On RV32 the immediate here can either be a signed or an unsigned
+            // 32-bit number. Sign extension has to be performed to ensure that Imm
+            // represents the expected signed 64-bit number.
+            if (!isRV64())
+              Imm = SignExtend64<32>(Imm);
+            emitLoadImm(Reg, Imm, Out);
+            return false;
+        }
+        case EMBER::PseudoLLA:
+            emitLoadLocalAddress(Inst, IDLoc, Out);
+            return false;
+        case EMBER::PseudoLA:
+            emitLoadAddress(Inst, IDLoc, Out);
+            return false;
+        case EMBER::PseudoLA_TLS_IE:
+        emitLoadTLSIEAddress(Inst, IDLoc, Out);
+        return false;
+        case EMBER::PseudoLA_TLS_GD:
+        emitLoadTLSGDAddress(Inst, IDLoc, Out);
+        return false;
+        case EMBER::PseudoLB:
+        emitLoadStoreSymbol(Inst, EMBER::LB, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLBU:
+        emitLoadStoreSymbol(Inst, EMBER::LBU, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLH:
+        emitLoadStoreSymbol(Inst, EMBER::LH, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLHU:
+        emitLoadStoreSymbol(Inst, EMBER::LHU, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLW:
+        emitLoadStoreSymbol(Inst, EMBER::LW, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLWU:
+        emitLoadStoreSymbol(Inst, EMBER::LWU, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoLD:
+        emitLoadStoreSymbol(Inst, EMBER::LD, IDLoc, Out, false);
+        return false;
+        case EMBER::PseudoFLH:
+        emitLoadStoreSymbol(Inst, EMBER::FLH, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoFLW:
+        emitLoadStoreSymbol(Inst, EMBER::FLW, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoFLD:
+        emitLoadStoreSymbol(Inst, EMBER::FLD, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoSB:
+        emitLoadStoreSymbol(Inst, EMBER::SB, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoSH:
+        emitLoadStoreSymbol(Inst, EMBER::SH, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoSW:
+        emitLoadStoreSymbol(Inst, EMBER::SW, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoSD:
+        emitLoadStoreSymbol(Inst, EMBER::SD, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoFSH:
+        emitLoadStoreSymbol(Inst, EMBER::FSH, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoFSW:
+        emitLoadStoreSymbol(Inst, EMBER::FSW, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoFSD:
+        emitLoadStoreSymbol(Inst, EMBER::FSD, IDLoc, Out, true);
+        return false;
+        case EMBER::PseudoAddTPRel:
+        if (checkPseudoAddTPRel(Inst, Operands))
+            return true;
+        break;
+        case EMBER::PseudoSEXT_B:
+        emitPseudoExtend(Inst, true, 8, IDLoc, Out);
+        return false;
+        case EMBER::PseudoSEXT_H:
+        emitPseudoExtend(Inst, true, 16, IDLoc, Out);
+        return false;
+        case EMBER::PseudoZEXT_H:
+        emitPseudoExtend(Inst, false, 16, IDLoc, Out);
+        return false;
+        case EMBER::PseudoZEXT_W:
+        emitPseudoExtend(Inst, false, 32, IDLoc, Out);
+        return false;
+        case EMBER::PseudoVMSGEU_VX:
+        case EMBER::PseudoVMSGEU_VX_M:
+        case EMBER::PseudoVMSGEU_VX_M_T:
+        emitVMSGE(Inst, EMBER::VMSLTU_VX, IDLoc, Out);
+        return false;
+        case EMBER::PseudoVMSGE_VX:
+        case EMBER::PseudoVMSGE_VX_M:
+        case EMBER::PseudoVMSGE_VX_M_T:
+        emitVMSGE(Inst, EMBER::VMSLT_VX, IDLoc, Out);
+        return false;
+        case EMBER::PseudoVMSGE_VI:
+        case EMBER::PseudoVMSLT_VI: {
+        // These instructions are signed and so is immediate so we can subtract one
+        // and change the opcode.
+        int64_t Imm = Inst.getOperand(2).getImm();
+        unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGE_VI ? EMBER::VMSGT_VI
+                                                                    : EMBER::VMSLE_VI;
+        emitToStreamer(Out, MCInstBuilder(Opc)
+                                .addOperand(Inst.getOperand(0))
+                                .addOperand(Inst.getOperand(1))
+                                .addImm(Imm - 1)
+                                .addOperand(Inst.getOperand(3)));
+        return false;
+        }
+        case EMBER::PseudoVMSGEU_VI:
+        case EMBER::PseudoVMSLTU_VI: {
+        int64_t Imm = Inst.getOperand(2).getImm();
+        // Unsigned comparisons are tricky because the immediate is signed. If the
+        // immediate is 0 we can't just subtract one. vmsltu.vi v0, v1, 0 is always
+        // false, but vmsle.vi v0, v1, -1 is always true. Instead we use
+        // vmsne v0, v1, v1 which is always false.
+        if (Imm == 0) {
+            unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
+                                ? EMBER::VMSEQ_VV
+                                : EMBER::VMSNE_VV;
+            emitToStreamer(Out, MCInstBuilder(Opc)
+                                    .addOperand(Inst.getOperand(0))
+                                    .addOperand(Inst.getOperand(1))
+                                    .addOperand(Inst.getOperand(1))
+                                    .addOperand(Inst.getOperand(3)));
+        } else {
+            // Other immediate values can subtract one like signed.
+            unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
+                                ? EMBER::VMSGTU_VI
+                                : EMBER::VMSLEU_VI;
+            emitToStreamer(Out, MCInstBuilder(Opc)
+                                    .addOperand(Inst.getOperand(0))
+                                    .addOperand(Inst.getOperand(1))
+                                    .addImm(Imm - 1)
+                                    .addOperand(Inst.getOperand(3)));
+        }
+
+        return false;
+        }
+  }
+*/
+
+    emitToStreamer(Out, Inst);
+    return false;
+}
+
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERAsmParser() 
+{
+    RegisterMCAsmParser<EMBERAsmParser> X(getTheEMBER32Target());
 }
