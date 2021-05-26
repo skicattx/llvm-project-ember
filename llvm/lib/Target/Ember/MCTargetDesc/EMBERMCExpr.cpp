@@ -213,23 +213,24 @@ void EMBERMCExpr::fixELFSymbolsInTLSFixups(MCAssembler &Asm) const {
   fixELFSymbolsInTLSFixupsImpl(getSubExpr(), Asm);
 }
 */
-bool EMBERMCExpr::evaluateAsConstant(int64_t &Res) const {
-  MCValue Value;
+bool EMBERMCExpr::evaluateAsConstant(int64_t &Res) const 
+{
+    MCValue Value;
 
-  if (Kind == VK_EMBER_PCREL_HI || Kind == VK_EMBER_PCREL_LO ||
-      Kind == VK_EMBER_GOT_HI || Kind == VK_EMBER_TPREL_HI ||
-      Kind == VK_EMBER_TPREL_LO || Kind == VK_EMBER_TPREL_ADD ||
-      Kind == VK_EMBER_TLS_GOT_HI || Kind == VK_EMBER_TLS_GD_HI ||
-      Kind == VK_EMBER_CALL || Kind == VK_EMBER_CALL_PLT)
-    return false;
+    if (Kind == VK_EMBER_PCREL_HI || Kind == VK_EMBER_PCREL_LO ||
+        Kind == VK_EMBER_GOT_HI || Kind == VK_EMBER_TPREL_HI ||
+        Kind == VK_EMBER_TPREL_LO || Kind == VK_EMBER_TPREL_ADD ||
+        Kind == VK_EMBER_TLS_GOT_HI || Kind == VK_EMBER_TLS_GD_HI ||
+        Kind == VK_EMBER_CALL || Kind == VK_EMBER_CALL_PLT)
+        return false;
 
-  if (!getSubExpr()->evaluateAsRelocatable(Value, nullptr, nullptr))
-    return false;
+    if (!getSubExpr()->evaluateAsRelocatable(Value, nullptr, nullptr))
+        return false;
 
-  if (!Value.isAbsolute())
-    return false;
+    if (!Value.isAbsolute())
+        return false;
 
-  return true;
+    return true;
 }
 /*
 int64_t EMBERMCExpr::evaluateAsInt64(int64_t Value) const {

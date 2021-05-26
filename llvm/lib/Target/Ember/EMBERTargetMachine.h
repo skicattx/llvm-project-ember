@@ -15,9 +15,11 @@
 #include "EMBERSubtarget.h"
 #include "llvm/Target/TargetMachine.h"
 
-namespace llvm {
+namespace llvm 
+{
 
-class EMBERTargetMachine : public LLVMTargetMachine {
+class EMBERTargetMachine : public LLVMTargetMachine 
+{
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
   EMBERSubtarget Subtarget;
   mutable StringMap<std::unique_ptr<EMBERSubtarget>> SubtargetMap;
@@ -25,7 +27,7 @@ public:
   EMBERTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
                      StringRef FS, const TargetOptions &Options,
                      Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
-                     CodeGenOpt::Level OL, bool JIT/*, bool is64bit*/);
+                     CodeGenOpt::Level OL, bool JIT);
   ~EMBERTargetMachine() override;
 
   const EMBERSubtarget *getSubtargetImpl() const { return &Subtarget; }

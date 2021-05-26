@@ -154,7 +154,7 @@ def SP32AsmOperand : EMBERAsmRegOperand {
 }
 
 
-class EMBERAsmImmOperand<int width> : AsmOperandClass 
+class EMBERAsmSImmOperand<int width> : AsmOperandClass 
 {
     let Name = "SImm" # width;
     let RenderMethod = "addImmOperands";
@@ -163,7 +163,19 @@ class EMBERAsmImmOperand<int width> : AsmOperandClass
 
 def simm14 : Operand<i32>
 {
-    let ParserMatchClass = EMBERAsmImmOperand<14>;
+    let ParserMatchClass = EMBERAsmSImmOperand<14>;
     let EncoderMethod = "getImmOpValue";
-//    let DecoderMethod = "decodeSImmOperand<14>";
+}
+
+class EMBERAsmUImmOperand<int width> : AsmOperandClass 
+{
+    let Name = "UImm" # width;
+    let RenderMethod = "addImmOperands";
+    let DiagnosticType = !strconcat("Invalid", Name);
+}
+
+def uimm14 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmUImmOperand<14>;
+    let EncoderMethod = "getImmOpValue";
 }

@@ -83,23 +83,23 @@ static MCInstPrinter *createEMBERMCInstPrinter(const Triple &T,
     return new EMBERInstPrinter(MAI, MII, MRI);
 }
 
-/*
+// static MCTargetStreamer *
+// createEMBERObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
+//   const Triple &TT = STI.getTargetTriple();
+//   if (TT.isOSBinFormatELF())
+//     return new EMBERTargetELFStreamer(S, STI);
+//   return nullptr;
+// }
 
-static MCTargetStreamer *
-createEMBERObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
-  const Triple &TT = STI.getTargetTriple();
-  if (TT.isOSBinFormatELF())
-    return new EMBERTargetELFStreamer(S, STI);
-  return nullptr;
-}
-
-static MCTargetStreamer *createEMBERAsmTargetStreamer(MCStreamer &S,
+static MCTargetStreamer *createEMBERAsmTargetStreamer(MCStreamer            &S,
                                                       formatted_raw_ostream &OS,
-                                                      MCInstPrinter *InstPrint,
-                                                      bool isVerboseAsm) {
-  return new EMBERTargetAsmStreamer(S, OS);
+                                                      MCInstPrinter         *InstPrint,
+                                                      bool                  isVerboseAsm) 
+{
+    return new EMBERTargetAsmStreamer(S, OS);
 }
 
+/*
 static MCTargetStreamer *createEMBERNullTargetStreamer(MCStreamer &S) {
   return new EMBERTargetStreamer(S);
 }
@@ -152,11 +152,11 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTargetMC()
     TargetRegistry::RegisterMCCodeEmitter(getTheEMBER32Target(), createEMBERMCCodeEmitter);
     TargetRegistry::RegisterMCInstPrinter(getTheEMBER32Target(), createEMBERMCInstPrinter);
     TargetRegistry::RegisterMCSubtargetInfo(getTheEMBER32Target(), createEMBERMCSubtargetInfo);
-//     TargetRegistry::RegisterObjectTargetStreamer(getTheEMBER32Target(), createEMBERObjectTargetStreamer);
+//    TargetRegistry::RegisterObjectTargetStreamer(getTheEMBER32Target(), createEMBERObjectTargetStreamer);
 //     TargetRegistry::RegisterMCInstrAnalysis(getTheEMBER32Target(), createEMBERInstrAnalysis);
 
     // Register the asm target streamer.
-//     TargetRegistry::RegisterAsmTargetStreamer(getTheEMBER32Target(), createEMBERAsmTargetStreamer);
+    TargetRegistry::RegisterAsmTargetStreamer(getTheEMBER32Target(), createEMBERAsmTargetStreamer);
     // Register the null target streamer.
 //     TargetRegistry::RegisterNullTargetStreamer(getTheEMBER32Target(), createEMBERNullTargetStreamer);
 }

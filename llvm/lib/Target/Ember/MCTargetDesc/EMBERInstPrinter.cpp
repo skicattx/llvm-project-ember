@@ -67,25 +67,23 @@ void EMBERInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                  StringRef Annot, const MCSubtargetInfo &STI,
                                  raw_ostream &O) 
 {
-/*
-  bool Res = false;
+//   bool Res = false;
   const MCInst *NewMI = MI;
-  MCInst UncompressedMI;
-  if (!NoAliases)
-    Res = uncompressInst(UncompressedMI, *MI, MRI, STI);
-  if (Res)
-    NewMI = const_cast<MCInst *>(&UncompressedMI);
-  if (NoAliases || !printAliasInstr(NewMI, Address, STI, O))
+//   MCInst UncompressedMI;
+//   if (!NoAliases)
+//     Res = uncompressInst(UncompressedMI, *MI, MRI, STI);
+//   if (Res)
+//     NewMI = const_cast<MCInst *>(&UncompressedMI);
+//   if (NoAliases || !printAliasInstr(NewMI, Address, STI, O))
     printInstruction(NewMI, Address, STI, O);
-  printAnnotation(O, Annot);
-*/
+    printAnnotation(O, Annot);
 }
-/*
 
-void EMBERInstPrinter::printRegName(raw_ostream &O, unsigned RegNo) const {
-  O << getRegisterName(RegNo);
+void EMBERInstPrinter::printRegName(raw_ostream &O, unsigned RegNo) const 
+{
+    O << getRegisterName(RegNo);
 }
-*/
+
 void EMBERInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
                                     const MCSubtargetInfo &STI, raw_ostream &O,
                                     const char *Modifier) {
@@ -192,8 +190,4 @@ void EMBERInstPrinter::printVMaskReg(const MCInst *MI, unsigned OpNo,
 }
 
 */
-// const char *EMBERInstPrinter::getRegisterName(unsigned RegNo) 
-// {
-//   return getRegisterName(RegNo, ArchRegNames ? EMBER::NoRegAltName
-//                                              : EMBER::ABIRegAltName);
-// }
+

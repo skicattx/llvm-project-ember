@@ -33,39 +33,38 @@ using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
 namespace {
-  class EMBERAsmPrinter : public AsmPrinter {
-    EMBERTargetStreamer &getTargetStreamer() {
-      return static_cast<EMBERTargetStreamer &>(
-          *OutStreamer->getTargetStreamer());
-    }
+    class EMBERAsmPrinter : public AsmPrinter 
+    {
+        EMBERTargetStreamer &getTargetStreamer() 
+        {
+            return static_cast<EMBERTargetStreamer &>(*OutStreamer->getTargetStreamer());
+        }
   public:
-    explicit EMBERAsmPrinter(TargetMachine &TM,
-                             std::unique_ptr<MCStreamer> Streamer)
-        : AsmPrinter(TM, std::move(Streamer)) {}
-
-    StringRef getPassName() const override { return "EMBER Assembly Printer"; }
-
-    void printOperand(const MachineInstr *MI, int opNum, raw_ostream &OS);
-    void printMemOperand(const MachineInstr *MI, int opNum, raw_ostream &OS,
-                         const char *Modifier = nullptr);
-
-    void emitFunctionBodyStart() override;
-    void emitInstruction(const MachineInstr *MI) override;
-
-    static const char *getRegisterName(unsigned RegNo) {
-      return EMBERInstPrinter::getRegisterName(RegNo);
-    }
-
-    bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                         const char *ExtraCode, raw_ostream &O) override;
-    bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
-                               const char *ExtraCode, raw_ostream &O) override;
-
-    void LowerGETPCXAndEmitMCInsts(const MachineInstr *MI,
-                                   const MCSubtargetInfo &STI);
-
-  };
+        explicit EMBERAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer) :
+            AsmPrinter(TM, std::move(Streamer)) 
+        {}
+     
+        StringRef getPassName() const override { return "EMBER Assembly Printer"; }
+     
+        void printOperand(const MachineInstr *MI, int opNum, raw_ostream &OS);
+        void printMemOperand(const MachineInstr *MI, int opNum, raw_ostream &OS, const char *Modifier = nullptr);
+     
+        void emitFunctionBodyStart() override;
+        void emitInstruction(const MachineInstr *MI) override;
+     
+        static const char *getRegisterName(unsigned RegNo) 
+        {
+            return EMBERInstPrinter::getRegisterName(RegNo);
+        }
+     
+        bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo, const char *ExtraCode, raw_ostream &O) override;
+        bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo, const char *ExtraCode, raw_ostream &O) override;
+     
+        void LowerGETPCXAndEmitMCInsts(const MachineInstr *MI, const MCSubtargetInfo &STI);
+     
+    };
 } // end of anonymous namespace
+
 /*
 
 static MCOperand createEMBERMCOperand(EMBERMCExpr::VariantKind Kind,
@@ -448,6 +447,7 @@ bool EMBERAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
 }
 
 // Force static initialization.
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERAsmPrinter() {
-  RegisterAsmPrinter<EMBERAsmPrinter> X(getTheEMBER32Target());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERAsmPrinter() 
+{
+    RegisterAsmPrinter<EMBERAsmPrinter> X(getTheEMBER32Target());
 }

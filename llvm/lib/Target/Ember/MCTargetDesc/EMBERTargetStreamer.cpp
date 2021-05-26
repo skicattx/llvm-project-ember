@@ -11,33 +11,36 @@
 //===----------------------------------------------------------------------===//
 
 #include "EMBERTargetStreamer.h"
-/*
-#include "EMBERMCTargetDesc.h"
-#include "llvm/Support/FormattedStream.h"
-#include "llvm/Support/EMBERAttributes.h"
+// #include "EMBERMCTargetDesc.h"
+// #include "llvm/Support/FormattedStream.h"
+// #include "llvm/Support/EMBERAttributes.h"
 
 using namespace llvm;
 
 EMBERTargetStreamer::EMBERTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
 
-void EMBERTargetStreamer::finish() { finishAttributeSection(); }
+void EMBERTargetStreamer::finish()
+{
+    /*finishAttributeSection()*/; 
+}
 
-void EMBERTargetStreamer::emitDirectiveOptionPush() {}
-void EMBERTargetStreamer::emitDirectiveOptionPop() {}
-void EMBERTargetStreamer::emitDirectiveOptionPIC() {}
-void EMBERTargetStreamer::emitDirectiveOptionNoPIC() {}
-void EMBERTargetStreamer::emitDirectiveOptionRVC() {}
-void EMBERTargetStreamer::emitDirectiveOptionNoRVC() {}
-void EMBERTargetStreamer::emitDirectiveOptionRelax() {}
-void EMBERTargetStreamer::emitDirectiveOptionNoRelax() {}
-void EMBERTargetStreamer::emitAttribute(unsigned Attribute, unsigned Value) {}
-void EMBERTargetStreamer::finishAttributeSection() {}
-void EMBERTargetStreamer::emitTextAttribute(unsigned Attribute,
-                                            StringRef String) {}
-void EMBERTargetStreamer::emitIntTextAttribute(unsigned Attribute,
-                                               unsigned IntValue,
-                                               StringRef StringValue) {}
+// void EMBERTargetStreamer::emitDirectiveOptionPush() {}
+// void EMBERTargetStreamer::emitDirectiveOptionPop() {}
+// void EMBERTargetStreamer::emitDirectiveOptionPIC() {}
+// void EMBERTargetStreamer::emitDirectiveOptionNoPIC() {}
+// void EMBERTargetStreamer::emitDirectiveOptionRVC() {}
+// void EMBERTargetStreamer::emitDirectiveOptionNoRVC() {}
+// void EMBERTargetStreamer::emitDirectiveOptionRelax() {}
+// void EMBERTargetStreamer::emitDirectiveOptionNoRelax() {}
+// void EMBERTargetStreamer::emitAttribute(unsigned Attribute, unsigned Value) {}
+// void EMBERTargetStreamer::finishAttributeSection() {}
+// void EMBERTargetStreamer::emitTextAttribute(unsigned Attribute,
+//                                             StringRef String) {}
+// void EMBERTargetStreamer::emitIntTextAttribute(unsigned Attribute,
+//                                                unsigned IntValue,
+//                                                StringRef StringValue) {}
 
+/*
 void EMBERTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
   if (STI.hasFeature(EMBER::FeatureRV32E))
     emitAttribute(EMBERAttrs::STACK_ALIGN, EMBERAttrs::ALIGN_4);
@@ -96,12 +99,14 @@ void EMBERTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
 
   emitTextAttribute(EMBERAttrs::ARCH, Arch);
 }
+*/
 
 // This part is for ascii assembly output
-EMBERTargetAsmStreamer::EMBERTargetAsmStreamer(MCStreamer &S,
-                                               formatted_raw_ostream &OS)
-    : EMBERTargetStreamer(S), OS(OS) {}
+EMBERTargetAsmStreamer::EMBERTargetAsmStreamer(MCStreamer &S, formatted_raw_ostream &OS) :
+    EMBERTargetStreamer(S), OS(OS) 
+{}
 
+/*
 void EMBERTargetAsmStreamer::emitDirectiveOptionPush() {
   OS << "\t.option\tpush\n";
 }

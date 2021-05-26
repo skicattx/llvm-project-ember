@@ -33,6 +33,7 @@ EMBERMCAsmInfo::EMBERMCAsmInfo(const Triple &TT)
 //  AllowQuestionAtStartOfIdentifier = true;
     AllowDollarAtStartOfIdentifier = true;
 //  AllowAtAtStartOfIdentifier = true;
+    UseMotorolaIntegers = true;
 }
 
 // const MCExpr *EMBERMCAsmInfo::getExprForFDESymbol(const MCSymbol *Sym,

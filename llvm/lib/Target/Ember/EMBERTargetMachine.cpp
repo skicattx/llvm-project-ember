@@ -18,9 +18,10 @@
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTarget() {
-  // Register the target.
-  RegisterTargetMachine<EMBER32TargetMachine> X(getTheEMBER32Target());
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTarget() 
+{
+    // Register the target.
+    RegisterTargetMachine<EMBER32TargetMachine> X(getTheEMBER32Target());
 }
 
 static std::string computeDataLayout(const Triple &T)
@@ -35,18 +36,6 @@ static std::string computeDataLayout(const Triple &T)
   // Alignments for 64 bit integers.
   Ret += "-i64:64";
 
-//   // On EMBERV9 128 floats are aligned to 128 bits, on others only to 64.
-//   // On EMBERV9 registers can hold 64 or 32 bits, on others only 32.
-//   if (is64Bit)
-//     Ret += "-n32:64";
-//   else
-//     Ret += "-f128:64-n32";
-// 
-//   if (is64Bit)
-//     Ret += "-S128";
-//   else
-//     Ret += "-S64";
-// 
   return Ret;
 }
 
@@ -55,18 +44,7 @@ static Reloc::Model getEffectiveRelocModel(Optional<Reloc::Model> RM)
   return RM.getValueOr(Reloc::Static);
 }
 
-// Code models. Some only make sense for 64-bit code.
-//
-// SunCC  Reloc   CodeModel  Constraints
-// abs32  Static  Small      text+data+bss linked below 2^32 bytes
-// abs44  Static  Medium     text+data+bss linked below 2^44 bytes
-// abs64  Static  Large      text smaller than 2^31 bytes
-// pic13  PIC_    Small      GOT < 2^13 bytes
-// pic32  PIC_    Medium     GOT < 2^32 bytes
-//
-// All code models require that the text segment is smaller than 2GB.
-static CodeModel::Model
-getEffectiveEMBERCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM, bool JIT) 
+static CodeModel::Model getEffectiveEMBERCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM, bool JIT) 
 {
   if (CM) {
     if (*CM == CodeModel::Tiny)
@@ -78,7 +56,6 @@ getEffectiveEMBERCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM, bool 
   return CodeModel::Small;
 }
 
-/// Create an ILP32 architecture model
 EMBERTargetMachine::EMBERTargetMachine(
     const Target &T, const Triple &TT, StringRef CPU, StringRef FS,
     const TargetOptions &Options, Optional<Reloc::Model> RM,
@@ -174,11 +151,15 @@ void EMBERPassConfig::addIRPasses() {
 
 void EMBER32TargetMachine::anchor() { }
 
-EMBER32TargetMachine::EMBER32TargetMachine(const Target &T, const Triple &TT,
-                                           StringRef CPU, StringRef FS,
-                                           const TargetOptions &Options,
-                                           Optional<Reloc::Model> RM,
-                                           Optional<CodeModel::Model> CM,
-                                           CodeGenOpt::Level OL, bool JIT)
-    : EMBERTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT) {}
+EMBER32TargetMachine::EMBER32TargetMachine(const Target                &T, 
+                                           const Triple                &TT, 
+                                           StringRef                    CPU, 
+                                           StringRef                    FS,
+                                           const TargetOptions         &Options,
+                                           Optional<Reloc::Model>       RM,
+                                           Optional<CodeModel::Model>   CM,
+                                           CodeGenOpt::Level            OL,
+                                           bool                         JIT) :
+    EMBERTargetMachine(T, TT, CPU, FS, Options, RM, CM, OL, JIT) 
+{}
 

@@ -7,7 +7,8 @@
 #ifndef LLVM_LIB_TARGET_EMBER_TARGETINFO_EMBERTARGETINFO_H
 #define LLVM_LIB_TARGET_EMBER_TARGETINFO_EMBERTARGETINFO_H
 
-namespace llvm {
+namespace llvm 
+{
 
 class Target;
 

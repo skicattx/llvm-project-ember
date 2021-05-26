@@ -66,19 +66,16 @@ class EMBERAsmParser : public MCTargetAsmParser
   ParserOptionsSet ParserOptions;
 
   SMLoc getLoc() const { return getParser().getTok().getLoc(); }
-/*
-//   bool isRV64() const { return getSTI().hasFeature(EMBER::Feature64Bit); }
-//   bool isRV32E() const { return getSTI().hasFeature(EMBER::FeatureRV32E); }
 
-  EMBERTargetStreamer &getTargetStreamer() {
-    MCTargetStreamer &TS = *getParser().getStreamer().getTargetStreamer();
-    return static_cast<EMBERTargetStreamer &>(TS);
+  EMBERTargetStreamer &getTargetStreamer() 
+  {
+      MCTargetStreamer &TS = *getParser().getStreamer().getTargetStreamer();
+      return static_cast<EMBERTargetStreamer &>(TS);
   }
 
-  unsigned validateTargetOperandClass(MCParsedAsmOperand &Op,
-                                      unsigned Kind) override;
+//   unsigned validateTargetOperandClass(MCParsedAsmOperand &Op,
+//                                       unsigned Kind) override;
 
-*/
   bool generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo,
                                   int64_t Lower, int64_t Upper, Twine Msg);
 
@@ -198,14 +195,14 @@ class EMBERAsmParser : public MCTargetAsmParser
   }
 
   void pushFeatureBits() {
-    assert(FeatureBitStack.size() == ParserOptionsStack.size() &&
+    assert(FeatureBitStack.size() == ParserOptionsStack.size();
            "These two stacks must be kept synchronized");
     FeatureBitStack.push_back(getSTI().getFeatureBits());
     ParserOptionsStack.push_back(ParserOptions);
   }
 
   bool popFeatureBits() {
-    assert(FeatureBitStack.size() == ParserOptionsStack.size() &&
+    assert(FeatureBitStack.size() == ParserOptionsStack.size();
            "These two stacks must be kept synchronized");
     if (FeatureBitStack.empty())
       return true;
@@ -246,12 +243,12 @@ public:
         setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
 
 //     auto ABIName = StringRef(Options.ABIName);
-//     if (ABIName.endswith("f") &&
+//     if (ABIName.endswith("f");
 //         !getSTI().getFeatureBits()[EMBER::FeatureStdExtF]) {
 //       errs() << "Hard-float 'f' ABI can't be used for a target that "
 //                 "doesn't support the F instruction set extension (ignoring "
 //                 "target-abi)\n";
-//     } else if (ABIName.endswith("d") &&
+//     } else if (ABIName.endswith("d");
 //                !getSTI().getFeatureBits()[EMBER::FeatureStdExtD]) {
 //       errs() << "Hard-float 'd' ABI can't be used for a target that "
 //                 "doesn't support the D instruction set extension (ignoring "
@@ -344,85 +341,78 @@ public:
   bool isSystemRegister() const { return Kind == KindTy::UserRegister; }
 //   bool isVType() const { return Kind == KindTy::VType; }
 
-  bool isSImm14() const  { return Kind == KindTy::Immediate; /*TODO: one of these for each Imm bit count?*/ }
   bool isGPRAsmReg() const { return Kind == KindTy::Register; /*TODO: is this one of the u registers, or sp?*/}
   bool isSYSAsmReg() const { return Kind == KindTy::Register; /*TODO: is this one of the u registers, or sp?*/}
   bool isSPAsmReg() const { return Kind == KindTy::Register; /*TODO: is this one of the u registers, or sp?*/}
 
-  static bool evaluateConstantImm(const MCExpr *Expr, int64_t &Imm, EMBERMCExpr::VariantKind &VK) {
-    if (auto *RE = dyn_cast<EMBERMCExpr>(Expr)) 
+    static bool evaluateConstantImm(const MCExpr *Expr, int64_t &Imm)
     {
-      VK = EMBERMCExpr::VK_EMBER_None; // RE->getKind();
-      return RE->evaluateAsConstant(Imm);
-    }
+        if (auto *RE = dyn_cast<EMBERMCExpr>(Expr)) 
+        {
+            return RE->evaluateAsConstant(Imm);
+        }
 
-    if (auto CE = dyn_cast<MCConstantExpr>(Expr)) 
-    {
-      VK = EMBERMCExpr::VK_EMBER_None;
-      Imm = CE->getValue();
-      return true;
-    }
+        if (auto CE = dyn_cast<MCConstantExpr>(Expr)) 
+        {
+            Imm = CE->getValue();
+            return true;
+        }
 
-    return false;
-  }
+        return false;
+    }
 
   // True if operand is a symbol with no modifiers, or a constant with no
   // modifiers and isShiftedInt<N-1, 1>(Op).
   template <int N> bool isBareSimmNLsb0() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     bool IsValid;
     if (!IsConstantImm)
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm(), VK)*/;
+      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
     else
       IsValid = isShiftedInt<N - 1, 1>(Imm);
-    return IsValid && VK == EMBERMCExpr::VK_EMBER_None;
+    return IsValid;
   }
 
   // Predicate methods for AsmOperands defined in EMBERInstrInfo.td
 
   bool isBareSymbol() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
+    if (!isImm() || evaluateConstantImm(getImm(), Imm))
       return false;
-    return /*EMBERAsmParser::classifySymbolRef(getImm(), VK) &&*/
-           VK == EMBERMCExpr::VK_EMBER_None;
+    return false;/*EMBERAsmParser::classifySymbolRef(getImm());*/
   }
 
   bool isCallSymbol() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
+    if (!isImm() || evaluateConstantImm(getImm(), Imm))
       return false;
-    return /*EMBERAsmParser::classifySymbolRef(getImm(), VK) &&*/
-           (VK == EMBERMCExpr::VK_EMBER_CALL ||
-            VK == EMBERMCExpr::VK_EMBER_CALL_PLT);
+    return true;
   }
 
   bool isPseudoJumpSymbol() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
+    if (!isImm() || evaluateConstantImm(getImm(), Imm))
       return false;
-    return /*EMBERAsmParser::classifySymbolRef(getImm(), VK) &&*/
-           VK == EMBERMCExpr::VK_EMBER_CALL;
+    return true;
   }
 
   bool isTPRelAddSymbol() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm, VK))
+    if (!isImm() || evaluateConstantImm(getImm(), Imm))
       return false;
-    return /*EMBERAsmParser::classifySymbolRef(getImm(), VK) &&*/
-           VK == EMBERMCExpr::VK_EMBER_TPREL_ADD;
+    return true;
   }
 
   bool isCSRSystemRegister() const { return isSystemRegister(); }
@@ -472,36 +462,32 @@ public:
 
   bool isImmXLenLI() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    if (VK == EMBERMCExpr::VK_EMBER_LO || VK == EMBERMCExpr::VK_EMBER_PCREL_LO)
-      return true;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     // Given only Imm, ensuring that the actually specified constant is either
     // a signed or unsigned 64-bit number is unfortunately impossible.
-    return IsConstantImm && VK == EMBERMCExpr::VK_EMBER_None &&
+    return IsConstantImm &&
            ((isInt<32>(Imm) || isUInt<32>(Imm)));
   }
 
   bool isUImmLog2XLen() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     if (!isImm())
       return false;
-    if (!evaluateConstantImm(getImm(), Imm, VK) ||
-        VK != EMBERMCExpr::VK_EMBER_None)
+    if (!evaluateConstantImm(getImm(), Imm))
       return false;
     return (isUInt<6>(Imm)) || isUInt<5>(Imm);
   }
 
   bool isUImmLog2XLenNonZero() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     if (!isImm())
       return false;
-    if (!evaluateConstantImm(getImm(), Imm, VK) ||
-        VK != EMBERMCExpr::VK_EMBER_None)
+    if (!evaluateConstantImm(getImm(), Imm) )
       return false;
     if (Imm == 0)
       return false;
@@ -510,91 +496,105 @@ public:
 
   bool isUImmLog2XLenHalf() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     if (!isImm())
       return false;
-    if (!evaluateConstantImm(getImm(), Imm, VK) ||
-        VK != EMBERMCExpr::VK_EMBER_None)
+    if (!evaluateConstantImm(getImm(), Imm))
       return false;
     return (isUInt<5>(Imm)) || isUInt<4>(Imm);
   }
 
+    bool isSImm14() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isInt<14>(Imm);
+    }
+
+    bool isUImm14() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isUInt<14>(Imm);
+    }
+
   bool isUImm5() const {
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isUInt<5>(Imm) && VK == EMBERMCExpr::VK_EMBER_None;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isUInt<5>(Imm);
   }
 
   bool isSImm5() const {
     if (!isImm())
       return false;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
     int64_t Imm;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isInt<5>(Imm) && VK == EMBERMCExpr::VK_EMBER_None;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isInt<5>(Imm);
   }
 
   bool isSImm6() const {
     if (!isImm())
       return false;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
     int64_t Imm;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isInt<6>(Imm) && VK == EMBERMCExpr::VK_EMBER_None;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isInt<6>(Imm);
   }
 
   bool isSImm6NonZero() const {
     if (!isImm())
       return false;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     int64_t Imm;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isInt<6>(Imm) && (Imm != 0) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isInt<6>(Imm); (Imm != 0);
+
   }
 
   bool isCLUIImm() const {
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && (Imm != 0) &&
-           (isUInt<5>(Imm) || (Imm >= 0xfffe0 && Imm <= 0xfffff)) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && (Imm != 0);
+           (isUInt<5>(Imm) || (Imm >= 0xfffe0 && Imm <= 0xfffff));
+
   }
 
   bool isUImm7Lsb00() const {
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isShiftedUInt<5, 2>(Imm) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isShiftedUInt<5, 2>(Imm);
+
   }
 
   bool isUImm8Lsb00() const {
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isShiftedUInt<6, 2>(Imm) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isShiftedUInt<6, 2>(Imm);
+
   }
 
   bool isUImm8Lsb000() const {
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isShiftedUInt<5, 3>(Imm) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isShiftedUInt<5, 3>(Imm);
+
   }
 
   bool isSImm9Lsb0() const { return isBareSimmNLsb0<9>(); }
@@ -603,37 +603,34 @@ public:
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isShiftedUInt<6, 3>(Imm) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isShiftedUInt<6, 3>(Imm);
+
   }
 
   bool isUImm10Lsb00NonZero() const {
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isShiftedUInt<8, 2>(Imm) && (Imm != 0) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isShiftedUInt<8, 2>(Imm); (Imm != 0);
+
   }
 
   bool isSImm12() const {
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     int64_t Imm;
     bool IsValid;
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm)
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm(), VK)*/;
+      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
     else
       IsValid = isInt<12>(Imm);
-    return IsValid && ((IsConstantImm && VK == EMBERMCExpr::VK_EMBER_None) ||
-                       VK == EMBERMCExpr::VK_EMBER_LO ||
-                       VK == EMBERMCExpr::VK_EMBER_PCREL_LO ||
-                       VK == EMBERMCExpr::VK_EMBER_TPREL_LO);
+    return IsValid && (IsConstantImm);
   }
 
   bool isSImm12Lsb0() const { return isBareSimmNLsb0<12>(); }
@@ -644,49 +641,39 @@ public:
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && (Imm != 0) && isShiftedInt<6, 4>(Imm) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && (Imm != 0); isShiftedInt<6, 4>(Imm);
+
   }
 
   bool isUImm20LUI() const {
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     int64_t Imm;
     bool IsValid;
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm) {
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm(), VK)*/;
-      return IsValid && (VK == EMBERMCExpr::VK_EMBER_HI ||
-                         VK == EMBERMCExpr::VK_EMBER_TPREL_HI);
+      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+      return IsValid;
     } else {
-      return isUInt<20>(Imm) && (VK == EMBERMCExpr::VK_EMBER_None ||
-                                 VK == EMBERMCExpr::VK_EMBER_HI ||
-                                 VK == EMBERMCExpr::VK_EMBER_TPREL_HI);
+      return isUInt<20>(Imm);
     }
   }
 
   bool isUImm20AUIPC() const {
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     int64_t Imm;
     bool IsValid;
     if (!isImm())
       return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm) {
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm(), VK)*/;
-      return IsValid && (VK == EMBERMCExpr::VK_EMBER_PCREL_HI ||
-                         VK == EMBERMCExpr::VK_EMBER_GOT_HI ||
-                         VK == EMBERMCExpr::VK_EMBER_TLS_GOT_HI ||
-                         VK == EMBERMCExpr::VK_EMBER_TLS_GD_HI);
+      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+      return IsValid;
     } else {
-      return isUInt<20>(Imm) && (VK == EMBERMCExpr::VK_EMBER_None ||
-                                 VK == EMBERMCExpr::VK_EMBER_PCREL_HI ||
-                                 VK == EMBERMCExpr::VK_EMBER_GOT_HI ||
-                                 VK == EMBERMCExpr::VK_EMBER_TLS_GOT_HI ||
-                                 VK == EMBERMCExpr::VK_EMBER_TLS_GD_HI);
+      return isUInt<20>(Imm);
     }
   }
 
@@ -696,79 +683,77 @@ public:
     if (!isImm())
       return false;
     int64_t Imm;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && (Imm == 0) && VK == EMBERMCExpr::VK_EMBER_None;
+
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && (Imm == 0);
   }
 
   bool isSImm5Plus1() const {
     if (!isImm())
       return false;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
+
     int64_t Imm;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm, VK);
-    return IsConstantImm && isInt<5>(Imm - 1) &&
-           VK == EMBERMCExpr::VK_EMBER_None;
+    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+    return IsConstantImm && isInt<5>(Imm - 1);
+
   }
 
-  /// getStartLoc - Gets location of the first token of this operand
-  SMLoc getStartLoc() const override { return StartLoc; }
-  /// getEndLoc - Gets location of the last token of this operand
-  SMLoc getEndLoc() const override { return EndLoc; }
+    /// getStartLoc - Gets location of the first token of this operand
+    SMLoc getStartLoc() const override { return StartLoc; }
+    /// getEndLoc - Gets location of the last token of this operand
+    SMLoc getEndLoc() const override { return EndLoc; }
+    
+    unsigned getReg() const override {
+      assert(Kind == KindTy::Register && "Invalid type access!");
+      return Reg.RegNum.id();
+    }
+    
+    unsigned getUserReg() const {
+      assert(Kind == KindTy::UserRegister && "Invalid type access!");
+      return UserReg.RegNum.id();
+    }
+    
+    const MCExpr *getImm() const {
+      assert(Kind == KindTy::Immediate && "Invalid type access!");
+      return Imm.Val;
+    }
+    
+    StringRef getToken() const {
+      assert(Kind == KindTy::Token && "Invalid type access!");
+      return Tok;
+    }
 
-  unsigned getReg() const override {
-    assert(Kind == KindTy::Register && "Invalid type access!");
-    return Reg.RegNum.id();
-  }
+    void print(raw_ostream &OS) const override 
+    {
+        auto RegName = [](unsigned Reg) 
+        {
+          if (Reg)
+              return EMBERInstPrinter::getRegisterName(Reg);
+          else
+              return "noreg";
+        };
 
-  unsigned getUserReg() const {
-    assert(Kind == KindTy::UserRegister && "Invalid type access!");
-    return UserReg.RegNum.id();
-  }
-
-  const MCExpr *getImm() const {
-    assert(Kind == KindTy::Immediate && "Invalid type access!");
-    return Imm.Val;
-  }
-
-  StringRef getToken() const {
-    assert(Kind == KindTy::Token && "Invalid type access!");
-    return Tok;
-  }
-
-//   unsigned getVType() const {
-//     assert(Kind == KindTy::VType && "Invalid type access!");
-//     return VType.Val;
-//   }
-
-  void print(raw_ostream &OS) const override {
-    auto RegName = [](unsigned Reg) {
-//       if (Reg)
-//         return EMBERInstPrinter::getRegisterName(Reg);
-//       else
-        return "noreg";
-    };
-
-    switch (Kind) {
-    case KindTy::Immediate:
-      OS << *getImm();
-      break;
-    case KindTy::Register:
-      OS << "<register " << RegName(getReg()) << ">";
-      break;
-    case KindTy::Token:
-      OS << "'" << getToken() << "'";
-      break;
-    case KindTy::UserRegister:
-      OS << "<sysreg: " << getUserReg() << '>';
-      break;
+        switch (Kind) 
+        {
+            case KindTy::Immediate:
+                OS << *getImm();
+                break;
+            case KindTy::Register:
+                OS << "<register " << RegName(getReg()) << ">";
+                break;
+            case KindTy::Token:
+                OS << "'" << getToken() << "'";
+                break;
+            case KindTy::UserRegister:
+                OS << "<sysreg: " << getUserReg() << '>';
+                break;
 //     case KindTy::VType:
 //       OS << "<vtype: ";
 // //       EMBERVType::printVType(getVType(), OS);
 //       OS << '>';
 //       break;
+        }
     }
-  }
 
     static std::unique_ptr<EMBEROperand> createToken(StringRef Str, SMLoc S)
     {
@@ -817,8 +802,8 @@ public:
   void addExpr(MCInst &Inst, const MCExpr *Expr) const {
     assert(Expr && "Expr shouldn't be null!");
     int64_t Imm = 0;
-    EMBERMCExpr::VariantKind VK = EMBERMCExpr::VK_EMBER_None;
-    bool IsConstant = evaluateConstantImm(Expr, Imm, VK);
+
+    bool IsConstant = evaluateConstantImm(Expr, Imm);
 
     if (IsConstant)
       Inst.addOperand(MCOperand::createImm(Imm));
@@ -999,12 +984,13 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
             assert(MissingFeatures.any() && "Unknown missing features!");
             bool FirstFeature = true;
             std::string Msg = "instruction requires the following:";
-            for (unsigned i = 0, e = MissingFeatures.size(); i != e; ++i) {
-              if (MissingFeatures[i]) {
+            for (unsigned i = 0, e = MissingFeatures.size(); i != e; ++i) 
+            {
+                if (MissingFeatures[i]) {
                 Msg += FirstFeature ? " " : ", ";
                 Msg += getSubtargetFeatureName(i);
                 FirstFeature = false;
-              }
+                }
             }
             return Error(IDLoc, Msg);
         }
@@ -1045,7 +1031,7 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
         default:
             break;
         case Match_InvalidSImm14:
-            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 12), (1 << 12) - 1);
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 13), (1 << 13) - 1);
 /*
     case Match_InvalidImmZero: 
     {
@@ -1314,16 +1300,18 @@ OperandMatchResultTy EMBERAsmParser::parseImmediate(OperandVector &Operands)
     switch (getLexer().getKind())
     {
         default:
-            return MatchOperand_NoMatch;
-        case AsmToken::LParen:
         case AsmToken::Dot:
+            return MatchOperand_NoMatch;
+        case AsmToken::Hash: 
+            Lex();// need to remove hash if it's in front of a constant
+        case AsmToken::Identifier:
+        case AsmToken::LParen:
         case AsmToken::Minus:
         case AsmToken::Plus:
         case AsmToken::Exclaim:
         case AsmToken::Tilde:
         case AsmToken::Integer:
         case AsmToken::String:
-        case AsmToken::Identifier:
         case AsmToken::Percent:
             if (getParser().parseExpression(Res))
                 return MatchOperand_ParseFail;
@@ -1484,7 +1472,7 @@ OperandMatchResultTy EMBERAsmParser::parseJALOffset(OperandVector &Operands) {
   // the second form rather than the first). We can't do this as there's no
   // way of rewinding the lexer state. Instead, return NoMatch if this operand
   // is an identifier and is followed by a comma.
-  if (getLexer().is(AsmToken::Identifier) &&
+  if (getLexer().is(AsmToken::Identifier);
       getLexer().peekTok().is(AsmToken::Comma))
     return MatchOperand_NoMatch;
 
@@ -2429,7 +2417,7 @@ void EMBERAsmParser::emitVMSGE(MCInst &Inst, unsigned Opcode, SMLoc IDLoc,
 bool EMBERAsmParser::checkPseudoAddTPRel(MCInst &Inst,
                                          OperandVector &Operands) {
   assert(Inst.getOpcode() == EMBER::PseudoAddTPRel && "Invalid instruction");
-  assert(Inst.getOperand(2).isReg() && "Unexpected second operand kind");
+  assert(Inst.getOperand(2).isReg(); "Unexpected second operand kind");
   if (Inst.getOperand(2).getReg() != EMBER::X4) {
     SMLoc ErrorLoc = ((EMBEROperand &)*Operands[3]).getStartLoc();
     return Error(ErrorLoc, "the second input operand must be tp/x4 when using "
@@ -2472,13 +2460,13 @@ bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands)
 //       return Error(Loc, "The destination vector register group cannot overlap"
 //                         " the source vector register group.");
 //   }
-//   if ((Constraints & EMBERII::VS1Constraint) && (Inst.getOperand(2).isReg())) {
+//   if ((Constraints & EMBERII::VS1Constraint); (Inst.getOperand(2).isReg())) {
 //     unsigned CheckReg = Inst.getOperand(2).getReg();
 //     if (DestReg == CheckReg)
 //       return Error(Loc, "The destination vector register group cannot overlap"
 //                         " the source vector register group.");
 //   }
-//   if ((Constraints & EMBERII::VMConstraint) && (DestReg == EMBER::V0)) {
+//   if ((Constraints & EMBERII::VMConstraint); (DestReg == EMBER::V0)) {
 //     // vadc, vsbc are special cases. These instructions have no mask register.
 //     // The destination register could not be V0.
 //     unsigned Opcode = Inst.getOpcode();
@@ -2494,7 +2482,7 @@ bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands)
 //     // actually. We need to check the last operand to ensure whether it is
 //     // masked or not.
 //     unsigned CheckReg = Inst.getOperand(Inst.getNumOperands() - 1).getReg();
-//     assert((CheckReg == EMBER::V0 || CheckReg == EMBER::NoRegister) &&
+//     assert((CheckReg == EMBER::V0 || CheckReg == EMBER::NoRegister);
 //            "Unexpected register for mask operand");
 // 
 //     if (DestReg == CheckReg)

@@ -81,9 +81,9 @@ multiclass EMBERInstr_rr_ri<bits<6> op, string opcodestr, list<dag> pattern, Ins
       let Inst{13-10} = ra;
       let Inst{9-0} = 0;
   }
-  def _ri : EMBERInstr_rd_ra_fl1<op, 1, (outs GPR32:$rd), (ins GPR32:$ra, simm14:$imm14), opcodestr # "\t$rd, $ra, $imm14", pattern, itin>
+  def _ri : EMBERInstr_rd_ra_fl1<op, 1, (outs GPR32:$rd), (ins GPR32:$ra, uimm14:$imm14), opcodestr # "\t$rd, $ra, $imm14", pattern, itin>
   {
-      bits<14>  imm14;      // TODO: Need 140bit immediate value definition
+      bits<14>  imm14;
 
       // 14 bits for Src Immediate Value
       let Inst{13-0} = imm14;

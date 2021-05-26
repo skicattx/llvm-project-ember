@@ -28,14 +28,9 @@ public:
   bool applyTargetSpecificCLOption(StringRef Opt) override;
 */
 
-  void printInst(const MCInst *MI, uint64_t Address, StringRef Annot,
-                 const MCSubtargetInfo &STI, raw_ostream &O) override;
-/*
+  void printInst(const MCInst *MI, uint64_t Address, StringRef Annot, const MCSubtargetInfo &STI, raw_ostream &O) override;
   void printRegName(raw_ostream &O, unsigned RegNo) const override;
-
-*/
-  void printOperand(const MCInst *MI, unsigned OpNo, const MCSubtargetInfo &STI,
-                    raw_ostream &O, const char *Modifier = nullptr);
+  void printOperand(const MCInst *MI, unsigned OpNo, const MCSubtargetInfo &STI, raw_ostream &O, const char *Modifier = nullptr);
 /*
   void printBranchOperand(const MCInst *MI, uint64_t Address, unsigned OpNo,
                           const MCSubtargetInfo &STI, raw_ostream &O);
