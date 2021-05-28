@@ -70,14 +70,14 @@ include "EMBERInstrFormats.td"
 //===----------------------------------------------------------------------===//
 
 // ALU OpCodes
-defm ADD : EMBERInstr_rr_ri<0x0A, "add", [], NoItinerary>;
-defm AND : EMBERInstr_rr_ri<0x11, "sub", [], NoItinerary>;
-defm ASR : EMBERInstr_rr_ri<0x16, "asr", [], NoItinerary>;
-defm DIV : EMBERInstr_rr_ri<0x0F, "div", [], NoItinerary>;
-defm LSL : EMBERInstr_rr_ri<0x15, "lsl", [], NoItinerary>;
-defm LSR : EMBERInstr_rr_ri<0x14, "lsr", [], NoItinerary>;
-defm MUL : EMBERInstr_rr_ri<0x0C, "mul", [], NoItinerary>;
-defm OR  : EMBERInstr_rr_ri<0x12, "or",  [], NoItinerary>;
-defm SUB : EMBERInstr_rr_ri<0x0B, "sub", [], NoItinerary>;
-defm XOR : EMBERInstr_rr_ri<0x13, "xor", [], NoItinerary>;
+defm ADD : EMBERInstr_rd_ra_rb_imm14<0x0A, "add", [], NoItinerary>;
+defm AND : EMBERInstr_rd_ra_rb_imm14<0x11, "and", [], NoItinerary>;
+defm ASR : EMBERInstr_rd_ra_rb_imm14<0x16, "asr", [], NoItinerary>;
+defm DIV : EMBERInstr_rd_ra_rb_imm14<0x0F, "div", [], NoItinerary>;
+defm LSL : EMBERInstr_rd_ra_rb_imm14<0x15, "lsl", [], NoItinerary>;
+defm LSR : EMBERInstr_rd_ra_rb_imm14<0x14, "lsr", [], NoItinerary>;
+defm MUL : EMBERInstr_rd_ra_rb_imm14<0x0C, "mul", [], NoItinerary>;
+defm OR  : EMBERInstr_rd_ra_rb_imm14<0x12, "or",  [], NoItinerary>;
+defm SUB : EMBERInstr_rd_ra_rb_imm14<0x0B, "sub", [], NoItinerary>;
+defm XOR : EMBERInstr_rd_ra_rb_imm14<0x13, "xor", [], NoItinerary>;
 
