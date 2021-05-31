@@ -258,6 +258,7 @@ void EMBERAsmPrinter::emitInstruction(const MachineInstr *MI)
     LowerGETPCXAndEmitMCInsts(MI, getSubtargetInfo());
     return;
   }
+
   MachineBasicBlock::const_instr_iterator I = MI->getIterator();
   MachineBasicBlock::const_instr_iterator E = MI->getParent()->instr_end();
   do {
@@ -266,6 +267,9 @@ void EMBERAsmPrinter::emitInstruction(const MachineInstr *MI)
     EmitToStreamer(*OutStreamer, TmpInst);
   } while ((++I != E) && I->isInsideBundle()); // Delay slot check.
 */
+
+
+    int i=0; ++i;
 }
 
 void EMBERAsmPrinter::emitFunctionBodyStart() 

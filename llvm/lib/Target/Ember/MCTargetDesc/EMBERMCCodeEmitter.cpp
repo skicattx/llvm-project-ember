@@ -10,8 +10,8 @@
 
 #include "MCTargetDesc/EMBERMCTargetDesc.h"
 //#include "MCTargetDesc/EMBERBaseInfo.h"
-//#include "MCTargetDesc/EMBERFixupKinds.h"
-//#include "MCTargetDesc/EMBERMCExpr.h"
+#include "MCTargetDesc/EMBERFixupKinds.h"
+#include "MCTargetDesc/EMBERMCExpr.h"
 #include "llvm/ADT/Statistic.h"
 // #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCFixup.h"
@@ -37,22 +37,28 @@ using namespace llvm;
 STATISTIC(MCNumEmitted, "Number of MC instructions emitted");
 STATISTIC(MCNumFixups, "Number of MC fixups created");
 
-namespace {
-class EMBERMCCodeEmitter : public MCCodeEmitter {
-  EMBERMCCodeEmitter(const EMBERMCCodeEmitter &) = delete;
-  void operator=(const EMBERMCCodeEmitter &) = delete;
-  MCContext &Ctx;
-  MCInstrInfo const &MCII;
+namespace 
+{
+
+class EMBERMCCodeEmitter : public MCCodeEmitter 
+{
+    EMBERMCCodeEmitter(const EMBERMCCodeEmitter &) = delete;
+    void operator=(const EMBERMCCodeEmitter &) = delete;
+    MCContext &Ctx;
+    MCInstrInfo const &MCII;
 
 public:
-  EMBERMCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII)
-      : Ctx(ctx), MCII(MCII) {}
+    EMBERMCCodeEmitter(MCContext &ctx, MCInstrInfo const &MCII) :
+        Ctx(ctx),
+        MCII(MCII) 
+    {}
 
-  ~EMBERMCCodeEmitter() override {}
+    ~EMBERMCCodeEmitter() override {}
 
-  void encodeInstruction(const MCInst &MI, raw_ostream &OS,
-                         SmallVectorImpl<MCFixup> &Fixups,
-                         const MCSubtargetInfo &STI) const override;
+    void encodeInstruction(const MCInst             &MI,
+                           raw_ostream              &OS,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo    &STI) const override;
 
   void expandFunctionCall(const MCInst &MI, raw_ostream &OS,
                           SmallVectorImpl<MCFixup> &Fixups,
@@ -62,11 +68,11 @@ public:
                       SmallVectorImpl<MCFixup> &Fixups,
                       const MCSubtargetInfo &STI) const;
 
-  /// TableGen'erated function for getting the binary encoding for an
-  /// instruction.
-//   uint64_t getBinaryCodeForInstr(const MCInst &MI,
-//                                  SmallVectorImpl<MCFixup> &Fixups,
-//                                  const MCSubtargetInfo &STI) const;
+    /// TableGen'erated function for getting the binary encoding for an
+    /// instruction.
+    uint64_t getBinaryCodeForInstr(const MCInst             &MI,
+                                   SmallVectorImpl<MCFixup> &Fixups,
+                                   const MCSubtargetInfo    &STI) const;
 
   /// Return binary encoding of operand. If the machine operand requires
   /// relocation, record the relocation and return zero.
@@ -87,17 +93,17 @@ public:
                        const MCSubtargetInfo &STI) const;
 
 private:
-//   FeatureBitset computeAvailableFeatures(const FeatureBitset &FB) const;
-//   void
-//   verifyInstructionPredicates(const MCInst &MI,
-//                               const FeatureBitset &AvailableFeatures) const;
+    FeatureBitset computeAvailableFeatures(const FeatureBitset &FB) const;
+
+    void verifyInstructionPredicates(const MCInst &MI, const FeatureBitset &AvailableFeatures) const;
 };
 } // end anonymous namespace
 
-MCCodeEmitter *llvm::createEMBERMCCodeEmitter(const MCInstrInfo &MCII,
+MCCodeEmitter *llvm::createEMBERMCCodeEmitter(const MCInstrInfo    &MCII,
                                               const MCRegisterInfo &MRI,
-                                              MCContext &Ctx) {
-  return new EMBERMCCodeEmitter(Ctx, MCII);
+                                              MCContext            &Ctx) 
+{
+    return new EMBERMCCodeEmitter(Ctx, MCII);
 }
 
 /*
@@ -191,18 +197,21 @@ void EMBERMCCodeEmitter::expandAddTPRel(const MCInst &MI, raw_ostream &OS,
   support::endian::write(OS, Binary, support::little);
 }
 */
-void EMBERMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
+void EMBERMCCodeEmitter::encodeInstruction(const MCInst             &MI, 
+                                           raw_ostream              &OS,
                                            SmallVectorImpl<MCFixup> &Fixups,
-                                           const MCSubtargetInfo &STI) const {
-//   verifyInstructionPredicates(MI, computeAvailableFeatures(STI.getFeatureBits()));
+                                           const MCSubtargetInfo    &STI) const
+{
+    verifyInstructionPredicates(MI, computeAvailableFeatures(STI.getFeatureBits()));
 
-//   const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
-//   // Get byte count of instruction.
-//   unsigned Size = Desc.getSize();
+    const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
 
-  // EMBERInstrInfo::getInstSizeInBytes hard-codes the number of expanded
-  // instructions for each pseudo, and must be updated when adding new pseudos
-  // or changing existing ones.
+    // Get byte count of instruction.
+    unsigned Size = Desc.getSize();
+
+    // EMBERInstrInfo::getInstSizeInBytes hard-codes the number of expanded
+    // instructions for each pseudo, and must be updated when adding new pseudos
+    // or changing existing ones.
 //   if (MI.getOpcode() == EMBER::PseudoCALLReg ||
 //       MI.getOpcode() == EMBER::PseudoCALL ||
 //       MI.getOpcode() == EMBER::PseudoTAIL ||
@@ -218,41 +227,44 @@ void EMBERMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
 //     return;
 //   }
 
-/*
-  switch (Size) {
-  default:
-    llvm_unreachable("Unhandled encodeInstruction length!");
-  case 2: {
-    uint16_t Bits = getBinaryCodeForInstr(MI, Fixups, STI);
-    support::endian::write<uint16_t>(OS, Bits, support::little);
-    break;
-  }
-  case 4: {
-    uint32_t Bits = getBinaryCodeForInstr(MI, Fixups, STI);
-    support::endian::write(OS, Bits, support::little);
-    break;
-  }
-  }
-*/
+    switch (Size) 
+    {
+        default:
+            llvm_unreachable("Unhandled encodeInstruction length!");
+        case 8: 
+        {
+            uint64_t Bits = getBinaryCodeForInstr(MI, Fixups, STI);
+            support::endian::write<uint64_t>(OS, Bits, support::little);
+            break;
+        }
+        case 4:
+        {
+            uint32_t Bits = getBinaryCodeForInstr(MI, Fixups, STI);
+            support::endian::write(OS, Bits, support::little);
+            break;
+        }
+    }
 
-  ++MCNumEmitted; // Keep track of the # of mi's emitted.
+    ++MCNumEmitted; // Keep track of the # of mi's emitted.
 }
-/*
-unsigned
-EMBERMCCodeEmitter::getMachineOpValue(const MCInst &MI, const MCOperand &MO,
-                                      SmallVectorImpl<MCFixup> &Fixups,
-                                      const MCSubtargetInfo &STI) const {
 
+
+unsigned
+EMBERMCCodeEmitter::getMachineOpValue(const MCInst             &MI, 
+                                      const MCOperand          &MO,
+                                      SmallVectorImpl<MCFixup> &Fixups,
+                                      const MCSubtargetInfo    &STI) const
+{
   if (MO.isReg())
     return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
 
   if (MO.isImm())
     return static_cast<unsigned>(MO.getImm());
 
-  llvm_unreachable("Unhandled expression!");
-  return 0;
+    return 0;
 }
 
+/*
 unsigned
 EMBERMCCodeEmitter::getImmOpValueAsr1(const MCInst &MI, unsigned OpNo,
                                       SmallVectorImpl<MCFixup> &Fixups,
@@ -267,133 +279,142 @@ EMBERMCCodeEmitter::getImmOpValueAsr1(const MCInst &MI, unsigned OpNo,
 
   return getImmOpValue(MI, OpNo, Fixups, STI);
 }
+*/
 
-unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst &MI, unsigned OpNo,
+
+unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI, 
+                                           unsigned                  OpNo,
                                            SmallVectorImpl<MCFixup> &Fixups,
-                                           const MCSubtargetInfo &STI) const {
-  bool EnableRelax = STI.getFeatureBits()[EMBER::FeatureRelax];
-  const MCOperand &MO = MI.getOperand(OpNo);
+                                           const MCSubtargetInfo    &STI) const 
+{
+//   bool EnableRelax = STI.getFeatureBits()[EMBER::FeatureRelax];
+    const MCOperand &MO = MI.getOperand(OpNo);
+// 
+    MCInstrDesc const &Desc = MCII.get(MI.getOpcode());
+//    unsigned MIFrm = Desc.TSFlags & EMBERII::InstFormatMask;
+// 
+//   // If the destination is an immediate, there is nothing to do.
+//   if (MO.isImm())
+//     return MO.getImm();
+// 
+    assert(MO.isExpr() && "getImmOpValue expects only expressions or immediates");
 
-  MCInstrDesc const &Desc = MCII.get(MI.getOpcode());
-  unsigned MIFrm = Desc.TSFlags & EMBERII::InstFormatMask;
+    const MCExpr *Expr = MO.getExpr();
+    MCExpr::ExprKind Kind = Expr->getKind();
+    EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
+//   bool RelaxCandidate = false;
+    if (Kind == MCExpr::Target) 
+    {
+        const EMBERMCExpr *RVExpr = cast<EMBERMCExpr>(Expr);
 
-  // If the destination is an immediate, there is nothing to do.
-  if (MO.isImm())
-    return MO.getImm();
-
-  assert(MO.isExpr() &&
-         "getImmOpValue expects only expressions or immediates");
-  const MCExpr *Expr = MO.getExpr();
-  MCExpr::ExprKind Kind = Expr->getKind();
-  EMBER::Fixups FixupKind = EMBER::fixup_riscv_invalid;
-  bool RelaxCandidate = false;
-  if (Kind == MCExpr::Target) {
-    const EMBERMCExpr *RVExpr = cast<EMBERMCExpr>(Expr);
-
-    switch (RVExpr->getKind()) {
-    case EMBERMCExpr::VK_EMBER_None:
-    case EMBERMCExpr::VK_EMBER_Invalid:
-    case EMBERMCExpr::VK_EMBER_32_PCREL:
-      llvm_unreachable("Unhandled fixup kind!");
-    case EMBERMCExpr::VK_EMBER_TPREL_ADD:
-      // tprel_add is only used to indicate that a relocation should be emitted
-      // for an add instruction used in TP-relative addressing. It should not be
-      // expanded as if representing an actual instruction operand and so to
-      // encounter it here is an error.
-      llvm_unreachable(
-          "VK_EMBER_TPREL_ADD should not represent an instruction operand");
-    case EMBERMCExpr::VK_EMBER_LO:
-      if (MIFrm == EMBERII::InstFormatI)
-        FixupKind = EMBER::fixup_riscv_lo12_i;
-      else if (MIFrm == EMBERII::InstFormatS)
-        FixupKind = EMBER::fixup_riscv_lo12_s;
-      else
-        llvm_unreachable("VK_EMBER_LO used with unexpected instruction format");
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_HI:
-      FixupKind = EMBER::fixup_riscv_hi20;
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_PCREL_LO:
-      if (MIFrm == EMBERII::InstFormatI)
-        FixupKind = EMBER::fixup_riscv_pcrel_lo12_i;
-      else if (MIFrm == EMBERII::InstFormatS)
-        FixupKind = EMBER::fixup_riscv_pcrel_lo12_s;
-      else
-        llvm_unreachable(
-            "VK_EMBER_PCREL_LO used with unexpected instruction format");
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_PCREL_HI:
-      FixupKind = EMBER::fixup_riscv_pcrel_hi20;
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_GOT_HI:
-      FixupKind = EMBER::fixup_riscv_got_hi20;
-      break;
-    case EMBERMCExpr::VK_EMBER_TPREL_LO:
-      if (MIFrm == EMBERII::InstFormatI)
-        FixupKind = EMBER::fixup_riscv_tprel_lo12_i;
-      else if (MIFrm == EMBERII::InstFormatS)
-        FixupKind = EMBER::fixup_riscv_tprel_lo12_s;
-      else
-        llvm_unreachable(
-            "VK_EMBER_TPREL_LO used with unexpected instruction format");
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_TPREL_HI:
-      FixupKind = EMBER::fixup_riscv_tprel_hi20;
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_TLS_GOT_HI:
-      FixupKind = EMBER::fixup_riscv_tls_got_hi20;
-      break;
-    case EMBERMCExpr::VK_EMBER_TLS_GD_HI:
-      FixupKind = EMBER::fixup_riscv_tls_gd_hi20;
-      break;
-    case EMBERMCExpr::VK_EMBER_CALL:
-      FixupKind = EMBER::fixup_riscv_call;
-      RelaxCandidate = true;
-      break;
-    case EMBERMCExpr::VK_EMBER_CALL_PLT:
-      FixupKind = EMBER::fixup_riscv_call_plt;
-      RelaxCandidate = true;
-      break;
+        switch (RVExpr->getKind())
+        {
+            case EMBERMCExpr::VK_EMBER_None:
+            case EMBERMCExpr::VK_EMBER_Invalid:
+//     case EMBERMCExpr::VK_EMBER_32_PCREL:
+//       llvm_unreachable("Unhandled fixup kind!");
+//     case EMBERMCExpr::VK_EMBER_TPREL_ADD:
+//       // tprel_add is only used to indicate that a relocation should be emitted
+//       // for an add instruction used in TP-relative addressing. It should not be
+//       // expanded as if representing an actual instruction operand and so to
+//       // encounter it here is an error.
+//       llvm_unreachable(
+//           "VK_EMBER_TPREL_ADD should not represent an instruction operand");
+//     case EMBERMCExpr::VK_EMBER_LO:
+//       if (MIFrm == EMBERII::InstFormatI)
+//         FixupKind = EMBER::fixup_riscv_lo12_i;
+//       else if (MIFrm == EMBERII::InstFormatS)
+//         FixupKind = EMBER::fixup_riscv_lo12_s;
+//       else
+//         llvm_unreachable("VK_EMBER_LO used with unexpected instruction format");
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_HI:
+//       FixupKind = EMBER::fixup_riscv_hi20;
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_PCREL_LO:
+//       if (MIFrm == EMBERII::InstFormatI)
+//         FixupKind = EMBER::fixup_riscv_pcrel_lo12_i;
+//       else if (MIFrm == EMBERII::InstFormatS)
+//         FixupKind = EMBER::fixup_riscv_pcrel_lo12_s;
+//       else
+//         llvm_unreachable(
+//             "VK_EMBER_PCREL_LO used with unexpected instruction format");
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_PCREL_HI:
+//       FixupKind = EMBER::fixup_riscv_pcrel_hi20;
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_GOT_HI:
+//       FixupKind = EMBER::fixup_riscv_got_hi20;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_TPREL_LO:
+//       if (MIFrm == EMBERII::InstFormatI)
+//         FixupKind = EMBER::fixup_riscv_tprel_lo12_i;
+//       else if (MIFrm == EMBERII::InstFormatS)
+//         FixupKind = EMBER::fixup_riscv_tprel_lo12_s;
+//       else
+//         llvm_unreachable(
+//             "VK_EMBER_TPREL_LO used with unexpected instruction format");
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_TPREL_HI:
+//       FixupKind = EMBER::fixup_riscv_tprel_hi20;
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_TLS_GOT_HI:
+//       FixupKind = EMBER::fixup_riscv_tls_got_hi20;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_TLS_GD_HI:
+//       FixupKind = EMBER::fixup_riscv_tls_gd_hi20;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_CALL:
+//       FixupKind = EMBER::fixup_riscv_call;
+//       RelaxCandidate = true;
+//       break;
+//     case EMBERMCExpr::VK_EMBER_CALL_PLT:
+//       FixupKind = EMBER::fixup_riscv_call_plt;
+//       RelaxCandidate = true;
+//       break;
+        }
     }
-  } else if (Kind == MCExpr::SymbolRef &&
-             cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) {
-    if (Desc.getOpcode() == EMBER::JAL) {
-      FixupKind = EMBER::fixup_riscv_jal;
-    } else if (MIFrm == EMBERII::InstFormatB) {
-      FixupKind = EMBER::fixup_riscv_branch;
-    } else if (MIFrm == EMBERII::InstFormatCJ) {
-      FixupKind = EMBER::fixup_riscv_rvc_jump;
-    } else if (MIFrm == EMBERII::InstFormatCB) {
-      FixupKind = EMBER::fixup_riscv_rvc_branch;
+    else if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) 
+    {
+        if (Desc.getOpcode() == EMBERII::fixup_ember_branch) 
+        {
+            FixupKind = EMBER::fixup_riscv_jal;
+        }
+//        else if (MIFrm == EMBERII::InstFormatB) {
+//       FixupKind = EMBER::fixup_riscv_branch;
+//     } else if (MIFrm == EMBERII::InstFormatCJ) {
+//       FixupKind = EMBER::fixup_riscv_rvc_jump;
+//     } else if (MIFrm == EMBERII::InstFormatCB) {
+//       FixupKind = EMBER::fixup_riscv_rvc_branch;
+//     }
     }
-  }
 
-  assert(FixupKind != EMBER::fixup_riscv_invalid && "Unhandled expression!");
+    assert(FixupKind != EMBER::fixup_ember_invalid && "Unhandled immediate value expression!");
 
-  Fixups.push_back(
-      MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
+    Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
   ++MCNumFixups;
 
-  // Ensure an R_EMBER_RELAX relocation will be emitted if linker relaxation is
-  // enabled and the current fixup will result in a relocation that may be
-  // relaxed.
-  if (EnableRelax && RelaxCandidate) {
-    const MCConstantExpr *Dummy = MCConstantExpr::create(0, Ctx);
-    Fixups.push_back(
-    MCFixup::create(0, Dummy, MCFixupKind(EMBER::fixup_riscv_relax),
-                    MI.getLoc()));
-    ++MCNumFixups;
-  }
+//   // Ensure an R_EMBER_RELAX relocation will be emitted if linker relaxation is
+//   // enabled and the current fixup will result in a relocation that may be
+//   // relaxed.
+//   if (EnableRelax && RelaxCandidate) {
+//     const MCConstantExpr *Dummy = MCConstantExpr::create(0, Ctx);
+//     Fixups.push_back(
+//     MCFixup::create(0, Dummy, MCFixupKind(EMBER::fixup_riscv_relax),
+//                     MI.getLoc()));
+//     ++MCNumFixups;
+//   }
 
   return 0;
 }
 
+/*
 unsigned EMBERMCCodeEmitter::getVMaskReg(const MCInst &MI, unsigned OpNo,
                                          SmallVectorImpl<MCFixup> &Fixups,
                                          const MCSubtargetInfo &STI) const {
@@ -409,8 +430,8 @@ unsigned EMBERMCCodeEmitter::getVMaskReg(const MCInst &MI, unsigned OpNo,
     return 1;
   }
 }
+*/
 
 #define ENABLE_INSTR_PREDICATE_VERIFIER
 #include "EMBERGenMCCodeEmitter.inc"
 
-*/

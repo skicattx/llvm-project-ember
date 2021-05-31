@@ -20,11 +20,12 @@
 //#include "llvm/Support/EMBERAttributes.h"
 
 using namespace llvm;
-/*
 // This part is for ELF object output.
-EMBERTargetELFStreamer::EMBERTargetELFStreamer(MCStreamer &S,
-                                               const MCSubtargetInfo &STI)
-    : EMBERTargetStreamer(S), CurrentVendor("riscv") {
+EMBERTargetELFStreamer::EMBERTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI) :
+    EMBERTargetStreamer(S)//, 
+//    CurrentVendor("iaritech")
+{
+/*
   MCAssembler &MCA = getStreamer().getAssembler();
   const FeatureBitset &Features = STI.getFeatureBits();
   auto &MAB = static_cast<EMBERAsmBackend &>(MCA.getBackend());
@@ -56,12 +57,14 @@ EMBERTargetELFStreamer::EMBERTargetELFStreamer(MCStreamer &S,
   }
 
   MCA.setELFHeaderEFlags(EFlags);
+*/
 }
 
-MCELFStreamer &EMBERTargetELFStreamer::getStreamer() {
-  return static_cast<MCELFStreamer &>(Streamer);
+MCELFStreamer &EMBERTargetELFStreamer::getStreamer() 
+{
+    return static_cast<MCELFStreamer &>(Streamer);
 }
-
+/*
 void EMBERTargetELFStreamer::emitDirectiveOptionPush() {}
 void EMBERTargetELFStreamer::emitDirectiveOptionPop() {}
 void EMBERTargetELFStreamer::emitDirectiveOptionPIC() {}

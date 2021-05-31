@@ -83,13 +83,13 @@ static MCInstPrinter *createEMBERMCInstPrinter(const Triple &T,
     return new EMBERInstPrinter(MAI, MII, MRI);
 }
 
-// static MCTargetStreamer *
-// createEMBERObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) {
-//   const Triple &TT = STI.getTargetTriple();
-//   if (TT.isOSBinFormatELF())
-//     return new EMBERTargetELFStreamer(S, STI);
-//   return nullptr;
-// }
+static MCTargetStreamer *createEMBERObjectTargetStreamer(MCStreamer &S, const MCSubtargetInfo &STI) 
+{
+    const Triple &TT = STI.getTargetTriple();
+    if (TT.isOSBinFormatELF())
+        return new EMBERTargetELFStreamer(S, STI);
+    return nullptr;
+}
 
 static MCTargetStreamer *createEMBERAsmTargetStreamer(MCStreamer            &S,
                                                       formatted_raw_ostream &OS,
@@ -152,7 +152,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTargetMC()
     TargetRegistry::RegisterMCCodeEmitter(getTheEMBER32Target(), createEMBERMCCodeEmitter);
     TargetRegistry::RegisterMCInstPrinter(getTheEMBER32Target(), createEMBERMCInstPrinter);
     TargetRegistry::RegisterMCSubtargetInfo(getTheEMBER32Target(), createEMBERMCSubtargetInfo);
-//    TargetRegistry::RegisterObjectTargetStreamer(getTheEMBER32Target(), createEMBERObjectTargetStreamer);
+    TargetRegistry::RegisterObjectTargetStreamer(getTheEMBER32Target(), createEMBERObjectTargetStreamer);
 //     TargetRegistry::RegisterMCInstrAnalysis(getTheEMBER32Target(), createEMBERInstrAnalysis);
 
     // Register the asm target streamer.

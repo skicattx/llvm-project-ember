@@ -9,14 +9,19 @@
 #ifndef LLVM_LIB_TARGET_EMBER_MCTARGETDESC_EMBERFIXUPKINDS_H
 #define LLVM_LIB_TARGET_EMBER_MCTARGETDESC_EMBERFIXUPKINDS_H
 
-/*
 #include "llvm/MC/MCFixup.h"
 
 #undef EMBER
 
-namespace llvm {
-namespace EMBER {
-enum Fixups {
+namespace llvm 
+{
+namespace EMBER 
+{
+enum Fixups 
+{
+  fixup_ember_branch = FirstTargetFixupKind,
+  fixup_ember_label_addr,
+/*
   // fixup_riscv_hi20 - 20-bit fixup corresponding to hi(foo) for
   // instructions like lui
   fixup_riscv_hi20 = FirstTargetFixupKind,
@@ -82,12 +87,14 @@ enum Fixups {
   // which indicates the linker should fixup the alignment after linker
   // relaxation.
   fixup_riscv_align,
+*/
 
   // fixup_riscv_invalid - used as a sentinel and a marker, must be last fixup
-  fixup_riscv_invalid,
-  NumTargetFixupKinds = fixup_riscv_invalid - FirstTargetFixupKind
+  fixup_ember_invalid,
+  NumTargetFixupKinds = fixup_ember_invalid - FirstTargetFixupKind
+
 };
 } // end namespace EMBER
 } // end namespace llvm
-*/
+
 #endif

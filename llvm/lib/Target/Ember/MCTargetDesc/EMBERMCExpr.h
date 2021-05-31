@@ -19,7 +19,8 @@ namespace llvm {
 
 class StringRef;
 
-class EMBERMCExpr : public MCTargetExpr {
+class EMBERMCExpr : public MCTargetExpr
+{
 public:
   enum VariantKind {
     VK_EMBER_None,

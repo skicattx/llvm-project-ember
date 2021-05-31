@@ -11,12 +11,13 @@
 #include "EMBERTargetStreamer.h"
 #include "llvm/MC/MCELFStreamer.h"
 
-namespace llvm {
+namespace llvm 
+{
 
-/*
-
-class EMBERTargetELFStreamer : public EMBERTargetStreamer {
+class EMBERTargetELFStreamer : public EMBERTargetStreamer 
+{
 private:
+    /*
   enum class AttributeType { Hidden, Numeric, Text, NumericAndText };
 
   struct AttributeItem {
@@ -84,18 +85,18 @@ private:
     Contents.push_back({AttributeType::NumericAndText, Attribute, IntValue,
                         std::string(StringValue)});
   }
-
   void emitAttribute(unsigned Attribute, unsigned Value) override;
   void emitTextAttribute(unsigned Attribute, StringRef String) override;
   void emitIntTextAttribute(unsigned Attribute, unsigned IntValue,
                             StringRef StringValue) override;
   void finishAttributeSection() override;
   size_t calculateContentSize() const;
+  */
 
 public:
   MCELFStreamer &getStreamer();
   EMBERTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);
-
+/*
   void emitDirectiveOptionPush() override;
   void emitDirectiveOptionPop() override;
   void emitDirectiveOptionPIC() override;
@@ -104,9 +105,9 @@ public:
   void emitDirectiveOptionNoRVC() override;
   void emitDirectiveOptionRelax() override;
   void emitDirectiveOptionNoRelax() override;
+*/
 };
 
-*/
 
 }
 

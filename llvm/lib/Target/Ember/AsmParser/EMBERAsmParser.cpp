@@ -2165,9 +2165,7 @@ bool EMBERAsmParser::parseDirectiveAttribute() {
 void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst)
 {
     MCInst CInst;
-//   bool Res = compressInst(CInst, Inst, getSTI(), S.getContext());
-//   if (Res)
-//     ++EMBERNumInstrsCompressed;
+
     S.emitInstruction(Inst, getSTI());
 }
 
