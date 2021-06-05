@@ -103,7 +103,7 @@ void EMBERTargetStreamer::emitTargetAttributes(const MCSubtargetInfo &STI) {
 
 // This part is for ascii assembly output
 EMBERTargetAsmStreamer::EMBERTargetAsmStreamer(MCStreamer &S, formatted_raw_ostream &OS) :
-    EMBERTargetStreamer(S), OS(OS) 
+    EMBERTargetStreamer(S)//, OS(OS) 
 {}
 
 /*

@@ -75,19 +75,19 @@ void EMBERTargetELFStreamer::emitDirectiveOptionRelax() {}
 void EMBERTargetELFStreamer::emitDirectiveOptionNoRelax() {}
 
 void EMBERTargetELFStreamer::emitAttribute(unsigned Attribute, unsigned Value) {
-  setAttributeItem(Attribute, Value, /*OverwriteExisting=* /true);
+  setAttributeItem(Attribute, Value, / *OverwriteExisting=* /true);
 }
 
 void EMBERTargetELFStreamer::emitTextAttribute(unsigned Attribute,
                                                StringRef String) {
-  setAttributeItem(Attribute, String, /*OverwriteExisting=* /true);
+  setAttributeItem(Attribute, String, / *OverwriteExisting=* /true);
 }
 
 void EMBERTargetELFStreamer::emitIntTextAttribute(unsigned Attribute,
                                                   unsigned IntValue,
                                                   StringRef StringValue) {
   setAttributeItems(Attribute, IntValue, StringValue,
-                    /*OverwriteExisting=* /true);
+                    / *OverwriteExisting=* /true);
 }
 
 void EMBERTargetELFStreamer::finishAttributeSection() {
@@ -170,3 +170,4 @@ size_t EMBERTargetELFStreamer::calculateContentSize() const {
 }
 
 */
+

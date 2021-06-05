@@ -249,17 +249,16 @@ void EMBERMCCodeEmitter::encodeInstruction(const MCInst             &MI,
 }
 
 
-unsigned
-EMBERMCCodeEmitter::getMachineOpValue(const MCInst             &MI, 
-                                      const MCOperand          &MO,
-                                      SmallVectorImpl<MCFixup> &Fixups,
-                                      const MCSubtargetInfo    &STI) const
+unsigned EMBERMCCodeEmitter::getMachineOpValue(const MCInst             &MI,
+                                               const MCOperand          &MO,
+                                               SmallVectorImpl<MCFixup> &Fixups,
+                                               const MCSubtargetInfo    &STI) const
 {
-  if (MO.isReg())
-    return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
+    if (MO.isReg())
+      return Ctx.getRegisterInfo()->getEncodingValue(MO.getReg());
 
-  if (MO.isImm())
-    return static_cast<unsigned>(MO.getImm());
+    if (MO.isImm())
+      return static_cast<unsigned>(MO.getImm());
 
     return 0;
 }
@@ -305,12 +304,15 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
 //   bool RelaxCandidate = false;
     if (Kind == MCExpr::Target) 
     {
-        const EMBERMCExpr *RVExpr = cast<EMBERMCExpr>(Expr);
+//        const EMBERMCExpr *RVExpr = cast<EMBERMCExpr>(Expr);
 
-        switch (RVExpr->getKind())
+//        switch (RVExpr->getKind())
         {
-            case EMBERMCExpr::VK_EMBER_None:
-            case EMBERMCExpr::VK_EMBER_Invalid:
+//            case EMBERMCExpr::VK_EMBER_None:
+//            case EMBERMCExpr::VK_EMBER_Invalid:
+
+            
+            
 //     case EMBERMCExpr::VK_EMBER_32_PCREL:
 //       llvm_unreachable("Unhandled fixup kind!");
 //     case EMBERMCExpr::VK_EMBER_TPREL_ADD:
@@ -382,17 +384,14 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
     }
     else if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) 
     {
-        if (Desc.getOpcode() == EMBERII::fixup_ember_branch) 
+        if (Desc.getOpcode() == 0)//EMBER::BRA_*)
         {
-            FixupKind = EMBER::fixup_riscv_jal;
+            FixupKind = EMBER::fixup_ember_branch;
         }
-//        else if (MIFrm == EMBERII::InstFormatB) {
-//       FixupKind = EMBER::fixup_riscv_branch;
-//     } else if (MIFrm == EMBERII::InstFormatCJ) {
-//       FixupKind = EMBER::fixup_riscv_rvc_jump;
-//     } else if (MIFrm == EMBERII::InstFormatCB) {
-//       FixupKind = EMBER::fixup_riscv_rvc_branch;
-//     }
+        else
+        {
+            FixupKind = EMBER::fixup_ember_label_addr;
+        }
     }
 
     assert(FixupKind != EMBER::fixup_ember_invalid && "Unhandled immediate value expression!");

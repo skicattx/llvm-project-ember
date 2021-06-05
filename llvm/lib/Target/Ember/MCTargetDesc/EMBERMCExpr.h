@@ -48,9 +48,10 @@ private:
 
   int64_t evaluateAsInt64(int64_t Value) const;
 
+ */
   explicit EMBERMCExpr(const MCExpr *Expr, VariantKind Kind)
       : Expr(Expr), Kind(Kind) {}
-*/
+
 public:
 /*
   static const EMBERMCExpr *create(const MCExpr *Expr, VariantKind Kind,

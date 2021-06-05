@@ -161,7 +161,7 @@ class EMBERAsmParser : public MCTargetAsmParser
   OperandMatchResultTy parseAtomicMemOp(OperandVector &Operands);
   * /
   OperandMatchResultTy parseOperandWithModifier(OperandVector &Operands);
-  /*
+  / *
   OperandMatchResultTy parseBareSymbol(OperandVector &Operands);
   OperandMatchResultTy parseCallSymbol(OperandVector &Operands);
   OperandMatchResultTy parsePseudoJumpSymbol(OperandVector &Operands);
@@ -552,7 +552,7 @@ public:
 
     int64_t Imm;
     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-    return IsConstantImm && isInt<6>(Imm); (Imm != 0);
+    return IsConstantImm && isInt<6>(Imm) && (Imm != 0);
 
   }
 
@@ -615,7 +615,7 @@ public:
     int64_t Imm;
 
     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-    return IsConstantImm && isShiftedUInt<8, 2>(Imm); (Imm != 0);
+    return IsConstantImm && isShiftedUInt<8, 2>(Imm) && (Imm != 0);
 
   }
 
@@ -1302,8 +1302,12 @@ OperandMatchResultTy EMBERAsmParser::parseImmediate(OperandVector &Operands)
         default:
         case AsmToken::Dot:
             return MatchOperand_NoMatch;
-        case AsmToken::Hash: 
+        case AsmToken::Hash:
+        {
             Lex();// need to remove hash if it's in front of a constant
+            LLVM_FALLTHROUGH;
+//            [[clang::fallthrough]];
+        }
         case AsmToken::Identifier:
         case AsmToken::LParen:
         case AsmToken::Minus:
@@ -1782,7 +1786,7 @@ bool EMBERAsmParser::ParseDirective(AsmToken DirectiveID) {
   // regardless of whether it is successfully handles or reports an
   // error. Otherwise it returns true to give the generic parser a
   // chance at recognizing it.
-  StringRef IDVal = DirectiveID.getString();
+//  StringRef IDVal = DirectiveID.getString();
 
 //   if (IDVal == ".option")
 //     return parseDirectiveOption();

@@ -42,7 +42,7 @@ public:
 // This part is for ascii assembly output
 class EMBERTargetAsmStreamer : public EMBERTargetStreamer 
 {
-    formatted_raw_ostream &OS;
+//    formatted_raw_ostream &OS;
 
 //       void finishAttributeSection() override;
 //       void emitAttribute(unsigned Attribute, unsigned Value) override;
