@@ -132,7 +132,7 @@ def SP32 : RegisterClass<"EMBER", [i32], 32, (add SP)>;
 //===----------------------------------------------------------------------===//
 
 class EMBERAsmRegOperand : AsmOperandClass {
-  let ParserMethod = "parseAnyRegister";
+  let ParserMethod = "parseRegister";
   // let EncoderMethod
   // let DecoderMethod
   // let ParserMatchClass
@@ -178,4 +178,22 @@ def uimm14 : Operand<i32>
 {
     let ParserMatchClass = EMBERAsmUImmOperand<14>;
     let EncoderMethod = "getImmOpValue";
+}
+
+
+def BranchTargetAsmOperand : AsmOperandClass 
+{
+    let Name = "BranchTarget";
+    let ParserMethod = "parseBranchTarget";
+    let RenderMethod = "addImmOperands";
+    let DiagnosticType = !strconcat("Invalid", Name);
+}
+
+def brtargetSImm22 : Operand<i32>
+{
+  let EncoderMethod = "getBranchTargetOpValueSImm22";
+  let PrintMethod = "printBranchOperand";
+  let OperandType = "OPERAND_PCREL";
+  let DecoderMethod = "DecodeBranchTargetSImm22";
+  let ParserMatchClass = BranchTargetAsmOperand;
 }

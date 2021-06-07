@@ -81,3 +81,7 @@ defm OR  : EMBERInstr_rd_ra_rb_imm14<0x12, "or",  [], NoItinerary>;
 defm SUB : EMBERInstr_rd_ra_rb_imm14<0x0B, "sub", [], NoItinerary>;
 defm XOR : EMBERInstr_rd_ra_rb_imm14<0x13, "xor", [], NoItinerary>;
 
+// Branch OpCodes
+defm BRA : EMBERInstr_bra_cond<0x04, "bra", [], NoItinerary>;
+defm BRL : EMBERInstr_bra_cond<0x05, "brl", [], NoItinerary>;
+

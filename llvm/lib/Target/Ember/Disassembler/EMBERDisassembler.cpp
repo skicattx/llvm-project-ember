@@ -357,14 +357,21 @@ static DecodeStatus DecodeGPR32RegisterClass(MCInst &Inst, unsigned RegNo,
                                              uint64_t Addr,
                                              const void *Decoder)
 {
-  return MCDisassembler::Success;
+  return MCDisassembler::Fail;
 }
 
 static DecodeStatus decodeSImmOperand(MCInst &Inst, uint64_t Imm,
                                              uint64_t Addr,
                                              const void *Decoder) 
 {
-  return MCDisassembler::Success;
+  return MCDisassembler::Fail;
+}
+
+static DecodeStatus DecodeBranchTargetSImm22(MCInst &Inst, uint64_t Imm,
+                                             uint64_t Addr,
+                                             const void *Decoder) 
+{
+  return MCDisassembler::Fail;
 }
 
 #include "EMBERGenDisassemblerTables.inc"

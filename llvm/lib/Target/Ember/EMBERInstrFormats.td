@@ -69,9 +69,9 @@ class EMBERInstr_rd_ra<bits<6> op, bits<3> cond, dag outs, dag ins, string opcod
 // EMBER OpCodes with Dest Register, Source Register, and either second Source Register OR 14-bit unsigned Immediate :
 //  <|opcode|cond|rd|ra|fl|rd/uimm14|>
 //======================================================================================================================
-multiclass EMBERInstr_rr_ri<bits<6> op, bits<3> cond, string opcodestr, list<dag> pattern, InstrItinClass itin>
+multiclass EMBERInstr_rr_ri<bits<6> op, bits<3> cond, string opcodecondstr, list<dag> pattern, InstrItinClass itin>
 {
-    def _rr : EMBERInstr_rd_ra<op, cond, (outs GPR32:$rd), (ins GPR32:$ra, GPR32:$rb), opcodestr, "\t$rd, $ra, $rb", pattern, itin>
+    def _rr : EMBERInstr_rd_ra<op, cond, (outs GPR32:$rd), (ins GPR32:$ra, GPR32:$rb), opcodecondstr, "\t$rd, $ra, $rb", pattern, itin>
     {
         bits<4>  rb;        // Src B Reg
 
@@ -82,7 +82,7 @@ multiclass EMBERInstr_rr_ri<bits<6> op, bits<3> cond, string opcodestr, list<dag
         let Inst{13-10} = ra;
         let Inst{9-0} = 0;
     }
-    def _ri : EMBERInstr_rd_ra<op, cond, (outs GPR32:$rd), (ins GPR32:$ra, uimm14:$imm14), opcodestr, "\t$rd, $ra, $imm14", pattern, itin>
+    def _ri : EMBERInstr_rd_ra<op, cond, (outs GPR32:$rd), (ins GPR32:$ra, uimm14:$imm14), opcodecondstr, "\t$rd, $ra, $imm14", pattern, itin>
     {
         bits<14>  imm14;
 
@@ -118,4 +118,63 @@ multiclass EMBERInstr_rd_ra_rb_imm14<bits<6> op, string opcodestr, list<dag> pat
     defm _nc : EMBERInstr_rr_ri<op, 0x6, opcodestr # ".nc", pattern, itin>;
     defm _v  : EMBERInstr_rr_ri<op, 0x7, opcodestr # ".v" , pattern, itin>;
 }
+
+
+//======================================================================================================================
+// EMBER Branch OpCodes with Register or Immediate value: 
+//  <|opcode|cond|fl|ra/simm22|>
+//======================================================================================================================
+multiclass EMBERInstr_bra_r_i<bits<6> op, bits<3> cond, string opcodecondstr, list<dag> pattern, InstrItinClass itin>
+{
+    def _r : EMBERInst<op, cond, (outs), (ins GPR32:$ra), opcodecondstr # "\t$ra", pattern, itin>
+    {
+        // Branch to address in a register
+        bits<4>  ra;        // Src A Reg
+
+        // 1 bit for flag
+        let Inst{22} = 0;   // Register flag
+
+        // 4 bits for Src B Reg
+        let Inst{13-10} = ra;
+        let Inst{9-0} = 0;
+    }
+    def _i : EMBERInst<op, cond, (outs), (ins brtargetSImm22:$br22), opcodecondstr # "\t$br22", pattern, itin>
+    {
+        // Branch to signed immediate offset from current location
+        bits<22>  br22;
+
+        // 1 bit for flag
+        let Inst{22} = 1;   // Immediate flag
+
+        // 22 bits for signed Src Immediate Branch Offset Value
+        let Inst{21-0} = br22;
+    }
+}
+
+
+//======================================================================================================================
+// Add in the condition codes and aliases
+//======================================================================================================================
+multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, InstrItinClass itin>
+{
+    defm _al : EMBERInstr_bra_r_i<op, 0x0, opcodestr, pattern, itin>;
+                                         
+    defm _eq : EMBERInstr_bra_r_i<op, 0x1, opcodestr # ".eq", pattern, itin>; 
+    def : MnemonicAlias<opcodestr # ".z", opcodestr # ".eq">;
+                                         
+    defm _ne : EMBERInstr_bra_r_i<op, 0x2, opcodestr # ".ne", pattern, itin>;
+    def : MnemonicAlias<opcodestr # ".nz", opcodestr # ".ne">;
+                                         
+    defm _ng : EMBERInstr_bra_r_i<op, 0x3, opcodestr # ".lt", pattern, itin>;
+    def : MnemonicAlias<opcodestr # ".ng", opcodestr # ".lt">;
+                                         
+    defm _ge : EMBERInstr_bra_r_i<op, 0x4, opcodestr # ".ge", pattern, itin>;
+    def : MnemonicAlias<opcodestr # ".p", opcodestr # ".ge">;
+                                         
+    defm _c  : EMBERInstr_bra_r_i<op, 0x5, opcodestr # ".c" , pattern, itin>;
+    defm _nc : EMBERInstr_bra_r_i<op, 0x6, opcodestr # ".nc", pattern, itin>;
+    defm _v  : EMBERInstr_bra_r_i<op, 0x7, opcodestr # ".v" , pattern, itin>;
+}
+
+
 

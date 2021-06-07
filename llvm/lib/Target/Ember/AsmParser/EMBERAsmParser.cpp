@@ -156,6 +156,7 @@ class EMBERAsmParser : public MCTargetAsmParser
 */
   OperandMatchResultTy parseRegister(OperandVector &Operands);
   OperandMatchResultTy parseImmediate(OperandVector &Operands);
+  OperandMatchResultTy parseBranchTarget(OperandVector& Operands);
   OperandMatchResultTy parseMemOpBaseReg(OperandVector &Operands);
 /*
   OperandMatchResultTy parseAtomicMemOp(OperandVector &Operands);
@@ -406,6 +407,18 @@ public:
     return true;
   }
 
+
+  bool isBranchTarget() const
+  {
+      int64_t Imm;
+
+      // Must be of 'immediate' type but not a constant.
+      if (!isImm() || evaluateConstantImm(getImm(), Imm))
+        return false;
+    
+      return true;
+  }
+
   bool isTPRelAddSymbol() const {
     int64_t Imm;
 
@@ -458,7 +471,6 @@ public:
 
     return EMBERFPRndMode::stringToRoundingMode(Str) != EMBERFPRndMode::Invalid;
   }
-*/
 
   bool isImmXLenLI() const {
     int64_t Imm;
@@ -503,6 +515,7 @@ public:
       return false;
     return (isUInt<5>(Imm)) || isUInt<4>(Imm);
   }
+*/
 
     bool isSImm14() const 
     {
@@ -522,7 +535,25 @@ public:
         return IsConstantImm && isUInt<14>(Imm);
     }
 
-  bool isUImm5() const {
+    bool isSImm22() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isInt<22>(Imm);
+    }
+
+    bool isUImm22() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isUInt<22>(Imm);
+    }
+
+/*  bool isUImm5() const {
     int64_t Imm;
     if (!isImm())
       return false;
@@ -627,7 +658,7 @@ public:
       return false;
     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm)
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+      IsValid = false/ *EMBERAsmParser::classifySymbolRef(getImm())* /;
     else
       IsValid = isInt<12>(Imm);
     return IsValid && (IsConstantImm);
@@ -655,7 +686,7 @@ public:
       return false;
     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm) {
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+      IsValid = false/ *EMBERAsmParser::classifySymbolRef(getImm())* /;
       return IsValid;
     } else {
       return isUInt<20>(Imm);
@@ -670,7 +701,7 @@ public:
       return false;
     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
     if (!IsConstantImm) {
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+      IsValid = false/ *EMBERAsmParser::classifySymbolRef(getImm())* /;
       return IsValid;
     } else {
       return isUInt<20>(Imm);
@@ -678,7 +709,7 @@ public:
   }
 
   bool isSImm21Lsb0JAL() const { return isBareSimmNLsb0<21>(); }
-
+*/
   bool isImmZero() const {
     if (!isImm())
       return false;
@@ -1032,7 +1063,11 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
             break;
         case Match_InvalidSImm14:
             return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 13), (1 << 13) - 1);
-/*
+        case Match_InvalidUImm14:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 14) - 1);
+        case Match_InvalidBranchTarget:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 21), (1 << 21) - 1); // TODO: don't think we know yet..as this would be a fix-up...
+ /*
     case Match_InvalidImmZero: 
     {
         SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
@@ -1291,12 +1326,47 @@ EMBERAsmParser::parseCSRSystemRegister(OperandVector &Operands) {
 }
 */
 
+OperandMatchResultTy EMBERAsmParser::parseBranchTarget(OperandVector &Operands)
+{
+    SMLoc S = getLoc();
+    SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+    const MCExpr *Res;
+
+    switch (getLexer().getKind())
+    {
+        default:
+        case AsmToken::LParen:
+        case AsmToken::Dot:
+        case AsmToken::Exclaim:
+        case AsmToken::Tilde:
+        case AsmToken::String:
+        case AsmToken::Percent:
+            return MatchOperand_NoMatch;
+        case AsmToken::Hash:
+        {
+            Lex();// need to remove hash if it's in front of a constant
+            LLVM_FALLTHROUGH;
+        }
+        case AsmToken::Identifier:
+        case AsmToken::Plus:
+        case AsmToken::Minus:
+        case AsmToken::Integer:
+            if (getParser().parseExpression(Res))
+                return MatchOperand_ParseFail;
+            break;
+    }
+
+    Operands.push_back(EMBEROperand::createImm(Res, S, E));
+    return MatchOperand_Success;
+}
+
 OperandMatchResultTy EMBERAsmParser::parseImmediate(OperandVector &Operands) 
 {
     SMLoc S = getLoc();
     SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
     const MCExpr *Res;
 
+    // TODO: remove some of these, percent, string, etc.
     switch (getLexer().getKind())
     {
         default:
@@ -1704,9 +1774,18 @@ OperandMatchResultTy EMBERAsmParser::parseAtomicMemOp(OperandVector &Operands) {
 bool EMBERAsmParser::parseOperand(OperandVector &Operands, 
                                   StringRef      Mnemonic) 
 {
+
     // Attempt to parse token as a register.
     if (parseRegister(Operands) == MatchOperand_Success)
         return false;
+
+    // auto parse imm/symbol values
+    if (MatchOperandParserImpl(Operands, Mnemonic, /*ParseForAllFeatures=*/true) == MatchOperand_Success)
+        return false;
+
+//     // Attempt to parse token as a branch target reference.
+//     if (parseBranchTarget(Operands) == MatchOperand_Success)
+//         return false;
 
     // Attempt to parse token as an immediate
     if (parseImmediate(Operands) == MatchOperand_Success) 
@@ -2491,6 +2570,12 @@ bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands)
 //       return Error(Loc, "The destination vector register group cannot overlap"
 //                         " the mask register.");
 //   }
+
+
+
+
+
+
   return false;
 }
 
@@ -2500,6 +2585,12 @@ bool EMBERAsmParser::processInstruction(MCInst         &Inst,
                                         MCStreamer     &Out) 
 {
     Inst.setLoc(IDLoc);
+
+
+
+
+
+
 
     // Emit pseudo and opcodes that can't be built in the tb code
 /*

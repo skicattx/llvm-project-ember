@@ -98,11 +98,13 @@ public:
                                     const MCRelaxableFragment *DF,
                                     const MCAsmLayout &Layout,
                                     const bool WasForced) const override;
+*/
+  
+    Optional<MCFixupKind> getFixupKind(StringRef Name) const override;
 
-  Optional<MCFixupKind> getFixupKind(StringRef Name) const override;
+    const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
 
-  const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override;
-
+/*
   bool mayNeedRelaxation(const MCInst &Inst,
                          const MCSubtargetInfo &STI) const override;
   unsigned getRelaxedOpcode(unsigned Op) const;

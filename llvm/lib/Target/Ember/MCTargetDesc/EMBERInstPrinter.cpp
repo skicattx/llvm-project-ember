@@ -63,18 +63,14 @@ bool EMBERInstPrinter::applyTargetSpecificCLOption(StringRef Opt) {
   return false;
 }
 */
-void EMBERInstPrinter::printInst(const MCInst *MI, uint64_t Address,
-                                 StringRef Annot, const MCSubtargetInfo &STI,
-                                 raw_ostream &O) 
+
+void EMBERInstPrinter::printInst(const MCInst          *MI, 
+                                 uint64_t               Address,
+                                 StringRef              Annot, 
+                                 const MCSubtargetInfo &STI,
+                                 raw_ostream           &O) 
 {
-//   bool Res = false;
-  const MCInst *NewMI = MI;
-//   MCInst UncompressedMI;
-//   if (!NoAliases)
-//     Res = uncompressInst(UncompressedMI, *MI, MRI, STI);
-//   if (Res)
-//     NewMI = const_cast<MCInst *>(&UncompressedMI);
-//   if (NoAliases || !printAliasInstr(NewMI, Address, STI, O))
+    const MCInst *NewMI = MI;
     printInstruction(NewMI, Address, STI, O);
     printAnnotation(O, Annot);
 }
@@ -84,45 +80,57 @@ void EMBERInstPrinter::printRegName(raw_ostream &O, unsigned RegNo) const
     O << getRegisterName(RegNo);
 }
 
-void EMBERInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
-                                    const MCSubtargetInfo &STI, raw_ostream &O,
-                                    const char *Modifier) {
-  assert((Modifier == 0 || Modifier[0] == 0) && "No modifiers supported");
-  const MCOperand &MO = MI->getOperand(OpNo);
+void EMBERInstPrinter::printOperand(const MCInst          *MI, 
+                                    unsigned               OpNo,
+                                    const MCSubtargetInfo &STI, 
+                                    raw_ostream           &O,
+                                    const char            *Modifier) 
+{
+    assert((Modifier == 0 || Modifier[0] == 0) && "No modifiers supported");
+    const MCOperand &MO = MI->getOperand(OpNo);
 
-  if (MO.isReg()) {
-    printRegName(O, MO.getReg());
-    return;
-  }
+    if (MO.isReg()) 
+    {
+        printRegName(O, MO.getReg());
+        return;
+    }
 
-  if (MO.isImm()) {
-    O << MO.getImm();
-    return;
-  }
+    if (MO.isImm())
+    {
+        // Write the constant as hex (we could look at the opcode and determine how to write, how many digits, etc.)
+        std::stringstream value;
+        value << "$" << std::hex << (uint32_t)MO.getImm();
 
-  assert(MO.isExpr() && "Unknown operand kind in printOperand");
-  MO.getExpr()->print(O, &MAI);
+        O << value.str();
+        return;
+    }
+
+    assert(MO.isExpr() && "Unknown operand kind in printOperand");
+    MO.getExpr()->print(O, &MAI);
 }
-/*
 
-void EMBERInstPrinter::printBranchOperand(const MCInst *MI, uint64_t Address,
-                                          unsigned OpNo,
+void EMBERInstPrinter::printBranchOperand(const MCInst          *MI,
+                                          uint64_t               Address,
+                                          unsigned               OpNo,
                                           const MCSubtargetInfo &STI,
-                                          raw_ostream &O) {
-  const MCOperand &MO = MI->getOperand(OpNo);
-  if (!MO.isImm())
-    return printOperand(MI, OpNo, STI, O);
+                                          raw_ostream           &O)
+{
+    const MCOperand &MO = MI->getOperand(OpNo);
+    if (!MO.isImm())
+        return printOperand(MI, OpNo, STI, O);
 
-  if (PrintBranchImmAsAddress) {
-    uint64_t Target = Address + MO.getImm();
-    if (!STI.hasFeature(EMBER::Feature64Bit))
-      Target &= 0xffffffff;
-    O << formatHex(Target);
-  } else {
-    O << MO.getImm();
-  }
+    if (PrintBranchImmAsAddress) 
+    {
+        uint64_t Target = Address + MO.getImm();
+        O << formatHex(Target);
+    }
+    else 
+    {
+        O << MO.getImm();
+    }
 }
 
+/*
 void EMBERInstPrinter::printCSRSystemRegister(const MCInst *MI, unsigned OpNo,
                                               const MCSubtargetInfo &STI,
                                               raw_ostream &O) {

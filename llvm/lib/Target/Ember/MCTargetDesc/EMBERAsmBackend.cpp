@@ -20,70 +20,71 @@
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
-/*
-Optional<MCFixupKind> EMBERAsmBackend::getFixupKind(StringRef Name) const {
-  if (STI.getTargetTriple().isOSBinFormatELF()) {
-    unsigned Type;
-    Type = llvm::StringSwitch<unsigned>(Name)
+
+Optional<MCFixupKind> EMBERAsmBackend::getFixupKind(StringRef Name) const 
+{
+    if (STI.getTargetTriple().isOSBinFormatELF()) 
+    {
+        unsigned Type;
+        Type = llvm::StringSwitch<unsigned>(Name)
 #define ELF_RELOC(X, Y) .Case(#X, Y)
 #include "llvm/BinaryFormat/ELFRelocs/EMBER.def"
 #undef ELF_RELOC
                .Case("BFD_RELOC_NONE", ELF::R_EMBER_NONE)
                .Case("BFD_RELOC_32", ELF::R_EMBER_32)
-               .Case("BFD_RELOC_64", ELF::R_EMBER_64)
                .Default(-1u);
-    if (Type != -1u)
-      return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
-  }
-  return None;
+        if (Type != -1u)
+            return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
+    }
+    return None;
 }
 
-const MCFixupKindInfo &
-EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
-  const static MCFixupKindInfo Infos[] = {
+const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const 
+{
+    const static MCFixupKindInfo Infos[] = 
+    {
       // This table *must* be in the order that the fixup_* kinds are defined in
       // EMBERFixupKinds.h.
       //
-      // name                      offset bits  flags
-      {"fixup_riscv_hi20", 12, 20, 0},
-      {"fixup_riscv_lo12_i", 20, 12, 0},
-      {"fixup_riscv_lo12_s", 0, 32, 0},
-      {"fixup_riscv_pcrel_hi20", 12, 20,
-       MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-      {"fixup_riscv_pcrel_lo12_i", 20, 12,
-       MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-      {"fixup_riscv_pcrel_lo12_s", 0, 32,
-       MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-      {"fixup_riscv_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_tprel_hi20", 12, 20, 0},
-      {"fixup_riscv_tprel_lo12_i", 20, 12, 0},
-      {"fixup_riscv_tprel_lo12_s", 0, 32, 0},
-      {"fixup_riscv_tprel_add", 0, 0, 0},
-      {"fixup_riscv_tls_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_tls_gd_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_jal", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_branch", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_rvc_jump", 2, 11, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_rvc_branch", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_call", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_call_plt", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
-      {"fixup_riscv_relax", 0, 0, 0},
-      {"fixup_riscv_align", 0, 0, 0}};
-  static_assert((array_lengthof(Infos)) == EMBER::NumTargetFixupKinds,
-                "Not all fixup kinds added to Infos array");
+      // name                   offset bits    flags
+      {"fixup_ember_branch",    0,     22,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
+      {"fixup_ember_label_addr",0,     14,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
+//       {"fixup_riscv_pcrel_hi20", 12, 20,
+//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
+//       {"fixup_riscv_pcrel_lo12_i", 20, 12,
+//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
+//       {"fixup_riscv_pcrel_lo12_s", 0, 32,
+//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
+//       {"fixup_riscv_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_tprel_hi20", 12, 20, 0},
+//       {"fixup_riscv_tprel_lo12_i", 20, 12, 0},
+//       {"fixup_riscv_tprel_lo12_s", 0, 32, 0},
+//       {"fixup_riscv_tprel_add", 0, 0, 0},
+//       {"fixup_riscv_tls_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_tls_gd_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_jal", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_branch", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_rvc_jump", 2, 11, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_rvc_branch", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_call", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_call_plt", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
+//       {"fixup_riscv_relax", 0, 0, 0},
+//       {"fixup_riscv_align", 0, 0, 0}};
 
-  // Fixup kinds from .reloc directive are like R_EMBER_NONE. They
-  // do not require any extra processing.
-  if (Kind >= FirstLiteralRelocationKind)
-    return MCAsmBackend::getFixupKindInfo(FK_NONE);
+    static_assert((array_lengthof(Infos)) == EMBER::NumTargetFixupKinds, "Not all fixup kinds added to Infos array");
 
-  if (Kind < FirstTargetFixupKind)
-    return MCAsmBackend::getFixupKindInfo(Kind);
+    // Not handled here, pass to default implementation if they are out of range
+    if (Kind >= FirstLiteralRelocationKind)
+        return MCAsmBackend::getFixupKindInfo(FK_NONE);
 
-  assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() &&
-         "Invalid kind!");
-  return Infos[Kind - FirstTargetFixupKind];
+    if (Kind < FirstTargetFixupKind)
+        return MCAsmBackend::getFixupKindInfo(Kind);
+
+    assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() && "Invalid Ember Fixup Kind!");
+    return Infos[Kind - FirstTargetFixupKind];
 }
+
+/*
 
 // If linker relaxation is enabled, or the relax option had previously been
 // enabled, always emit relocations even if the fixup can be resolved. This is

@@ -74,15 +74,17 @@ public:
                                    SmallVectorImpl<MCFixup> &Fixups,
                                    const MCSubtargetInfo    &STI) const;
 
-  /// Return binary encoding of operand. If the machine operand requires
-  /// relocation, record the relocation and return zero.
-  unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
-                             SmallVectorImpl<MCFixup> &Fixups,
-                             const MCSubtargetInfo &STI) const;
+    /// Return binary encoding of operand. If the machine operand requires
+    /// relocation, record the relocation and return zero.
+    unsigned getMachineOpValue(const MCInst             &MI, 
+                               const MCOperand          &MO,
+                               SmallVectorImpl<MCFixup> &Fixups,
+                               const MCSubtargetInfo    &STI) const;
 
-  unsigned getImmOpValueAsr1(const MCInst &MI, unsigned OpNo,
-                             SmallVectorImpl<MCFixup> &Fixups,
-                             const MCSubtargetInfo &STI) const;
+    unsigned getBranchTargetOpValueSImm22(const MCInst             &MI,
+                                          unsigned                 operandNo,
+                                          SmallVectorImpl<MCFixup> &Fixups,
+                                          const MCSubtargetInfo    &STI) const;
 
   unsigned getImmOpValue(const MCInst &MI, unsigned OpNo,
                          SmallVectorImpl<MCFixup> &Fixups,
@@ -263,6 +265,37 @@ unsigned EMBERMCCodeEmitter::getMachineOpValue(const MCInst             &MI,
     return 0;
 }
 
+unsigned EMBERMCCodeEmitter::getBranchTargetOpValueSImm22(const MCInst             &MI,
+                                                          unsigned                 operandNo,
+                                                          SmallVectorImpl<MCFixup> &Fixups,
+                                                          const MCSubtargetInfo    &STI) const
+{
+    const MCOperand& MO = MI.getOperand(operandNo);
+    const MCExpr* Expr = MO.getExpr();
+    MCExpr::ExprKind Kind = Expr->getKind();
+
+    // First determine if it is a fixed constant, rather than a symbol?
+//     if (MO.isImm())
+//         return MO.getImm();
+
+
+    // Otherwise, if it's a symbol, we can't resolve it until later, so add a 'fixup'
+    EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
+    if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None)
+    {
+        FixupKind = EMBER::fixup_ember_branch;
+
+        Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
+        ++MCNumFixups;
+
+        // Just return 0 now, fixup will get actual value later
+        return 0;
+    }
+
+    assert("Unhandled immediate branch target expression!");
+    return 0;
+}
+
 /*
 unsigned
 EMBERMCCodeEmitter::getImmOpValueAsr1(const MCInst &MI, unsigned OpNo,
@@ -289,15 +322,15 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
 //   bool EnableRelax = STI.getFeatureBits()[EMBER::FeatureRelax];
     const MCOperand &MO = MI.getOperand(OpNo);
 // 
-    MCInstrDesc const &Desc = MCII.get(MI.getOpcode());
 //    unsigned MIFrm = Desc.TSFlags & EMBERII::InstFormatMask;
 // 
-//   // If the destination is an immediate, there is nothing to do.
-//   if (MO.isImm())
-//     return MO.getImm();
-// 
+    // If the destination is an immediate, there is nothing to do.
+    if (MO.isImm())
+      return MO.getImm();
+
     assert(MO.isExpr() && "getImmOpValue expects only expressions or immediates");
 
+    MCInstrDesc const &Desc = MCII.get(MI.getOpcode());
     const MCExpr *Expr = MO.getExpr();
     MCExpr::ExprKind Kind = Expr->getKind();
     EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
@@ -397,7 +430,7 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
     assert(FixupKind != EMBER::fixup_ember_invalid && "Unhandled immediate value expression!");
 
     Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FixupKind), MI.getLoc()));
-  ++MCNumFixups;
+    ++MCNumFixups;
 
 //   // Ensure an R_EMBER_RELAX relocation will be emitted if linker relaxation is
 //   // enabled and the current fixup will result in a relocation that may be
@@ -410,7 +443,7 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
 //     ++MCNumFixups;
 //   }
 
-  return 0;
+    return 0;
 }
 
 /*
