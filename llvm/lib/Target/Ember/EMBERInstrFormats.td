@@ -79,7 +79,7 @@ multiclass EMBERInstr_rr_ri<bits<6> op, bits<3> cond, string opcodecondstr, list
         let Inst{14} = 0;   // Register flag
 
         // 4 bits for Src B Reg
-        let Inst{13-10} = ra;
+        let Inst{13-10} = rb;
         let Inst{9-0} = 0;
     }
     def _ri : EMBERInstr_rd_ra<op, cond, (outs GPR32:$rd), (ins GPR32:$ra, uimm14:$imm14), opcodecondstr, "\t$rd, $ra, $imm14", pattern, itin>
