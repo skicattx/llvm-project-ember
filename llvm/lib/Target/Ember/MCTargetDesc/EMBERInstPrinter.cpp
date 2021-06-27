@@ -24,6 +24,7 @@ using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
 
+#include <sstream>
 
 // Include the auto-generated portion of the assembly writer.
 #define PRINT_ALIAS_INSTR
