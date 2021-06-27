@@ -484,5 +484,5 @@ MCAsmBackend *llvm::createEMBERAsmBackend(const Target &T,
     const Triple &TT = STI.getTargetTriple();
     uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
     
-    return new EMBERAsmBackend(STI, OSABI, Options);
+    return new EMBERAsmBackend(STI, OSABI);
 }

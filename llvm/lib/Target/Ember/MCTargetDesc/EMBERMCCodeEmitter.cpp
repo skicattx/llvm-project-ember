@@ -292,7 +292,7 @@ unsigned EMBERMCCodeEmitter::getBranchTargetOpValueSImm22(const MCInst          
         return 0;
     }
 
-    assert("Unhandled immediate branch target expression!");
+    assert(0 && "Unhandled immediate branch target expression!");
     return 0;
 }
 
