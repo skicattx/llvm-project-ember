@@ -11,9 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "EMBERRegisterInfo.h"
-// #include "MCTargetDesc/EMBERABIInfo.h"
 #include "EMBER.h"
-//#include "EMBERMachineFunction.h"
 #include "EMBERSubtarget.h"
 #include "EMBERTargetMachine.h"
 #include "llvm/ADT/BitVector.h"

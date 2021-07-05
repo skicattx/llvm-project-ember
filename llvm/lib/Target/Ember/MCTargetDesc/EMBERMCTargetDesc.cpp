@@ -15,14 +15,7 @@
 #include "EMBERMCAsmInfo.h"
 #include "EMBERTargetStreamer.h"
 #include "TargetInfo/EMBERTargetInfo.h"
-// #include "llvm/ADT/STLExtras.h"
-// #include "llvm/MC/MCAsmInfo.h"
-// #include "llvm/MC/MCInstrAnalysis.h"
 #include "llvm/MC/MCInstrInfo.h"
-// #include "llvm/MC/MCRegisterInfo.h"
-// #include "llvm/MC/MCStreamer.h"
-// #include "llvm/MC/MCSubtargetInfo.h"
-// #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/TargetRegistry.h"
 
 #define GET_INSTRINFO_MC_DESC
@@ -99,50 +92,7 @@ static MCTargetStreamer *createEMBERAsmTargetStreamer(MCStreamer            &S,
     return new EMBERTargetAsmStreamer(S, OS);
 }
 
-/*
-static MCTargetStreamer *createEMBERNullTargetStreamer(MCStreamer &S) {
-  return new EMBERTargetStreamer(S);
-}
 
-namespace {
-
-class EMBERMCInstrAnalysis : public MCInstrAnalysis {
-public:
-  explicit EMBERMCInstrAnalysis(const MCInstrInfo *Info)
-      : MCInstrAnalysis(Info) {}
-
-  bool evaluateBranch(const MCInst &Inst, uint64_t Addr, uint64_t Size,
-                      uint64_t &Target) const override {
-    if (isConditionalBranch(Inst)) {
-      int64_t Imm;
-      if (Size == 2)
-        Imm = Inst.getOperand(1).getImm();
-      else
-        Imm = Inst.getOperand(2).getImm();
-      Target = Addr + Imm;
-      return true;
-    }
-
-    if (Inst.getOpcode() == EMBER::C_JAL || Inst.getOpcode() == EMBER::C_J) {
-      Target = Addr + Inst.getOperand(0).getImm();
-      return true;
-    }
-
-    if (Inst.getOpcode() == EMBER::JAL) {
-      Target = Addr + Inst.getOperand(1).getImm();
-      return true;
-    }
-
-    return false;
-  }
-};
-
-} // end anonymous namespace
-
-static MCInstrAnalysis *createEMBERInstrAnalysis(const MCInstrInfo *Info) {
-  return new EMBERMCInstrAnalysis(Info);
-}
-*/
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTargetMC() 
 {
     TargetRegistry::RegisterMCAsmInfo(getTheEMBER32Target(), createEMBERMCAsmInfo);
@@ -153,10 +103,7 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERTargetMC()
     TargetRegistry::RegisterMCInstPrinter(getTheEMBER32Target(), createEMBERMCInstPrinter);
     TargetRegistry::RegisterMCSubtargetInfo(getTheEMBER32Target(), createEMBERMCSubtargetInfo);
     TargetRegistry::RegisterObjectTargetStreamer(getTheEMBER32Target(), createEMBERObjectTargetStreamer);
-//     TargetRegistry::RegisterMCInstrAnalysis(getTheEMBER32Target(), createEMBERInstrAnalysis);
 
     // Register the asm target streamer.
     TargetRegistry::RegisterAsmTargetStreamer(getTheEMBER32Target(), createEMBERAsmTargetStreamer);
-    // Register the null target streamer.
-//     TargetRegistry::RegisterNullTargetStreamer(getTheEMBER32Target(), createEMBERNullTargetStreamer);
 }

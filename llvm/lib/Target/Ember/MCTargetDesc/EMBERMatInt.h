@@ -12,36 +12,9 @@
 #include "llvm/ADT/SmallVector.h"
 #include <cstdint>
 
-namespace llvm {
-class APInt;
+namespace llvm 
+{
+  class APInt;
 
-/*
-
-namespace RISCVMatInt {
-struct Inst {
-  unsigned Opc;
-  int64_t Imm;
-
-  Inst(unsigned Opc, int64_t Imm) : Opc(Opc), Imm(Imm) {}
-};
-using InstSeq = SmallVector<Inst, 8>;
-
-// Helper to generate an instruction sequence that will materialise the given
-// immediate value into a register. A sequence of instructions represented by a
-// simple struct is produced rather than directly emitting the instructions in
-// order to allow this helper to be used from both the MC layer and during
-// instruction selection.
-InstSeq generateInstSeq(int64_t Val, bool IsRV64);
-
-// Helper to estimate the number of instructions required to materialise the
-// given immediate value into a register. This estimate does not account for
-// `Val` possibly fitting into an immediate, and so may over-estimate.
-//
-// This will attempt to produce instructions to materialise `Val` as an
-// `Size`-bit immediate. `IsRV64` should match the target architecture.
-int getIntMatCost(const APInt &Val, unsigned Size, bool IsRV64);
-} // namespace RISCVMatInt
-
-*/
 } // namespace llvm
 #endif

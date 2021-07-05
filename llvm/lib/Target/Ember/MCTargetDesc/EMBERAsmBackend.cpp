@@ -51,27 +51,6 @@ const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const
       {"fixup_ember_label_addr",        0,     14,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},  
       {"fixup_ember_ldi_label_addr_lo", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
       {"fixup_ember_ldi_label_addr_hi", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
-//       {"fixup_riscv_pcrel_hi20", 12, 20,
-//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-//       {"fixup_riscv_pcrel_lo12_i", 20, 12,
-//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-//       {"fixup_riscv_pcrel_lo12_s", 0, 32,
-//        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
-//       {"fixup_riscv_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_tprel_hi20", 12, 20, 0},
-//       {"fixup_riscv_tprel_lo12_i", 20, 12, 0},
-//       {"fixup_riscv_tprel_lo12_s", 0, 32, 0},
-//       {"fixup_riscv_tprel_add", 0, 0, 0},
-//       {"fixup_riscv_tls_got_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_tls_gd_hi20", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_jal", 12, 20, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_branch", 0, 32, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_rvc_jump", 2, 11, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_rvc_branch", 0, 16, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_call", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_call_plt", 0, 64, MCFixupKindInfo::FKF_IsPCRel},
-//       {"fixup_riscv_relax", 0, 0, 0},
-//       {"fixup_riscv_align", 0, 0, 0}};
 
     static_assert((array_lengthof(Infos)) == EMBER::NumTargetFixupKinds, "Not all fixup kinds added to Infos array");
 
@@ -86,139 +65,9 @@ const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const
     return Infos[Kind - FirstTargetFixupKind];
 }
 
-/*
-
-// If linker relaxation is enabled, or the relax option had previously been
-// enabled, always emit relocations even if the fixup can be resolved. This is
-// necessary for correctness as offsets may change during relaxation.
-bool EMBERAsmBackend::shouldForceRelocation(const MCAssembler &Asm,
-                                            const MCFixup &Fixup,
-                                            const MCValue &Target) {
-  if (Fixup.getKind() >= FirstLiteralRelocationKind)
-    return true;
-  switch (Fixup.getTargetKind()) {
-  default:
-    break;
-  case FK_Data_1:
-  case FK_Data_2:
-  case FK_Data_4:
-  case FK_Data_8:
-    if (Target.isAbsolute())
-      return false;
-    break;
-  case EMBER::fixup_riscv_got_hi20:
-  case EMBER::fixup_riscv_tls_got_hi20:
-  case EMBER::fixup_riscv_tls_gd_hi20:
-    return true;
-  }
-
-  return STI.getFeatureBits()[EMBER::FeatureRelax] || ForceRelocs;
-}
-
-bool EMBERAsmBackend::fixupNeedsRelaxationAdvanced(const MCFixup &Fixup,
-                                                   bool Resolved,
-                                                   uint64_t Value,
-                                                   const MCRelaxableFragment *DF,
-                                                   const MCAsmLayout &Layout,
-                                                   const bool WasForced) const {
-  // Return true if the symbol is actually unresolved.
-  // Resolved could be always false when shouldForceRelocation return true.
-  // We use !WasForced to indicate that the symbol is unresolved and not forced
-  // by shouldForceRelocation.
-  if (!Resolved && !WasForced)
-    return true;
-
-  int64_t Offset = int64_t(Value);
-  switch (Fixup.getTargetKind()) {
-  default:
-    return false;
-  case EMBER::fixup_riscv_rvc_branch:
-    // For compressed branch instructions the immediate must be
-    // in the range [-256, 254].
-    return Offset > 254 || Offset < -256;
-  case EMBER::fixup_riscv_rvc_jump:
-    // For compressed jump instructions the immediate must be
-    // in the range [-2048, 2046].
-    return Offset > 2046 || Offset < -2048;
-  }
-}
-
-void EMBERAsmBackend::relaxInstruction(MCInst &Inst,
-                                       const MCSubtargetInfo &STI) const {
-  // TODO: replace this with call to auto generated uncompressinstr() function.
-  MCInst Res;
-  switch (Inst.getOpcode()) {
-  default:
-    llvm_unreachable("Opcode not expected!");
-  case EMBER::C_BEQZ:
-    // c.beqz $rs1, $imm -> beq $rs1, X0, $imm.
-    Res.setOpcode(EMBER::BEQ);
-    Res.addOperand(Inst.getOperand(0));
-    Res.addOperand(MCOperand::createReg(EMBER::X0));
-    Res.addOperand(Inst.getOperand(1));
-    break;
-  case EMBER::C_BNEZ:
-    // c.bnez $rs1, $imm -> bne $rs1, X0, $imm.
-    Res.setOpcode(EMBER::BNE);
-    Res.addOperand(Inst.getOperand(0));
-    Res.addOperand(MCOperand::createReg(EMBER::X0));
-    Res.addOperand(Inst.getOperand(1));
-    break;
-  case EMBER::C_J:
-    // c.j $imm -> jal X0, $imm.
-    Res.setOpcode(EMBER::JAL);
-    Res.addOperand(MCOperand::createReg(EMBER::X0));
-    Res.addOperand(Inst.getOperand(0));
-    break;
-  case EMBER::C_JAL:
-    // c.jal $imm -> jal X1, $imm.
-    Res.setOpcode(EMBER::JAL);
-    Res.addOperand(MCOperand::createReg(EMBER::X1));
-    Res.addOperand(Inst.getOperand(0));
-    break;
-  }
-  Inst = std::move(Res);
-}
-
-// Given a compressed control flow instruction this function returns
-// the expanded instruction.
-unsigned EMBERAsmBackend::getRelaxedOpcode(unsigned Op) const {
-  switch (Op) {
-  default:
-    return Op;
-  case EMBER::C_BEQZ:
-    return EMBER::BEQ;
-  case EMBER::C_BNEZ:
-    return EMBER::BNE;
-  case EMBER::C_J:
-  case EMBER::C_JAL: // fall through.
-    return EMBER::JAL;
-  }
-}
-
-bool EMBERAsmBackend::mayNeedRelaxation(const MCInst &Inst,
-                                        const MCSubtargetInfo &STI) const {
-  return getRelaxedOpcode(Inst.getOpcode()) != Inst.getOpcode();
-}
-*/
-
 bool EMBERAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const 
 {
-  /*
-  bool HasStdExtC = STI.getFeatureBits()[EMBER::FeatureStdExtC];
-  unsigned MinNopLen = HasStdExtC ? 2 : 4;
 
-  if ((Count % MinNopLen) != 0)
-    return false;
-
-  // The canonical nop on RISC-V is addi x0, x0, 0.
-  for (; Count >= 4; Count -= 4)
-    OS.write("\x13\0\0\0", 4);
-
-  // The canonical nop on RVC is c.nop.
-  if (Count && HasStdExtC)
-    OS.write("\x01\0", 2);
-    */
   return true;
 }
 /*

@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "EMBERTargetMachine.h"
-//#include "LeonPasses.h"
 #include "EMBER.h"
 #include "EMBERTargetObjectFile.h"
 #include "TargetInfo/EMBERTargetInfo.h"
@@ -71,37 +70,9 @@ EMBERTargetMachine::EMBERTargetMachine(
 }
 
 EMBERTargetMachine::~EMBERTargetMachine() {}
-/*
-const EMBERSubtarget *
-EMBERTargetMachine::getSubtargetImpl(const Function &F) const {
-  Attribute CPUAttr = F.getFnAttribute("target-cpu");
-  Attribute FSAttr = F.getFnAttribute("target-features");
 
-  std::string CPU =
-      CPUAttr.isValid() ? CPUAttr.getValueAsString().str() : TargetCPU;
-  std::string FS =
-      FSAttr.isValid() ? FSAttr.getValueAsString().str() : TargetFS;
-
-  // FIXME: This is related to the code below to reset the target options,
-  // we need to know whether or not the soft float flag is set on the
-  // function, so we can enable it as a subtarget feature.
-  bool softFloat = F.getFnAttribute("use-soft-float").getValueAsBool();
-
-  if (softFloat)
-    FS += FS.empty() ? "+soft-float" : ",+soft-float";
-
-  auto &I = SubtargetMap[CPU + FS];
-  if (!I) {
-    // This needs to be done before we create a new subtarget since any
-    // creation will depend on the TM and the code generation flags on the
-    // function that reside in TargetOptions.
-    resetTargetOptions(F);
-    I = std::make_unique<EMBERSubtarget>(TargetTriple, CPU, FS, *this);
-  }
-  return I.get();
-}
-*/
-namespace {
+namespace 
+{
 /// EMBER Code Generator Pass Configuration Options.
 class EMBERPassConfig : public TargetPassConfig {
 public:
@@ -113,8 +84,6 @@ public:
   }
 
   void addIRPasses() override;
-//   bool addInstSelector() override;
-//   void addPreEmitPass() override;
 };
 } // namespace
 
@@ -128,26 +97,6 @@ void EMBERPassConfig::addIRPasses() {
   TargetPassConfig::addIRPasses();
 }
 
-// bool EMBERPassConfig::addInstSelector() {
-//   addPass(createEMBERISelDag(getEMBERTargetMachine()));
-//   return false;
-// }
-
-// void EMBERPassConfig::addPreEmitPass(){
-//   addPass(createEMBERDelaySlotFillerPass());
-// 
-//   if (this->getEMBERTargetMachine().getSubtargetImpl()->insertNOPLoad())
-//   {
-//     addPass(new InsertNOPLoad());
-//   }
-//   if (this->getEMBERTargetMachine().getSubtargetImpl()->detectRoundChange()) {
-//     addPass(new DetectRoundChange());
-//   }
-//   if (this->getEMBERTargetMachine().getSubtargetImpl()->fixAllFDIVSQRT())
-//   {
-//     addPass(new FixAllFDIVSQRT());
-//   }
-// }
 
 void EMBER32TargetMachine::anchor() { }
 

@@ -14,10 +14,12 @@
 #include "EMBER.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 
-namespace llvm {
+namespace llvm 
+{
   class EMBERSubtarget;
 
-class EMBERFrameLowering : public TargetFrameLowering {
+class EMBERFrameLowering : public TargetFrameLowering 
+{
 protected:
   const EMBERSubtarget &STI;
 
@@ -46,10 +48,6 @@ public:
 protected:
   uint64_t estimateStackSize(const MachineFunction &MF) const;
 };
-
-/// Create EMBERFrameLowering objects.
-const EMBERFrameLowering *createEMBER16FrameLowering(const EMBERSubtarget &ST);
-const EMBERFrameLowering *createEMBERSEFrameLowering(const EMBERSubtarget &ST);
 
 } // End llvm namespace
 

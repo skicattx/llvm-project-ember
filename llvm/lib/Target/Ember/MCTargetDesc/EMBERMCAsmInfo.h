@@ -22,9 +22,6 @@ class EMBERMCAsmInfo : public MCAsmInfoELF
 
 public:
     explicit EMBERMCAsmInfo(const Triple &TargetTriple);
-
-//   const MCExpr *getExprForFDESymbol(const MCSymbol *Sym, unsigned Encoding,
-//                                     MCStreamer &Streamer) const override;
 };
 
 } // namespace llvm

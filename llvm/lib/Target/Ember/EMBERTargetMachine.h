@@ -11,7 +11,6 @@
 #ifndef LLVM_LIB_TARGET_EMBER_EMBERTARGETMACHINE_H
 #define LLVM_LIB_TARGET_EMBER_EMBERTARGETMACHINE_H
 
-//#include "EMBERInstrInfo.h"
 #include "EMBERSubtarget.h"
 #include "llvm/Target/TargetMachine.h"
 

@@ -9,9 +9,11 @@
 
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 
-namespace llvm {
+namespace llvm 
+{
   class EMBERTargetMachine;
-  class EMBERTargetObjectFile : public TargetLoweringObjectFileELF {
+  class EMBERTargetObjectFile : public TargetLoweringObjectFileELF
+  {
     MCSection *SmallDataSection;
     MCSection *SmallBSSSection;
     const EMBERTargetMachine *TM;
