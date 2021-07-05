@@ -46,9 +46,11 @@ const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const
       // This table *must* be in the order that the fixup_* kinds are defined in
       // EMBERFixupKinds.h.
       //
-      // name                   offset bits    flags
-      {"fixup_ember_branch",    0,     22,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
-      {"fixup_ember_label_addr",0,     14,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
+      // name                           offset bits    flags
+      {"fixup_ember_branch",            0,     22,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
+      {"fixup_ember_label_addr",        0,     14,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},  
+      {"fixup_ember_ldi_label_addr_lo", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
+      {"fixup_ember_ldi_label_addr_hi", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
 //       {"fixup_riscv_pcrel_hi20", 12, 20,
 //        MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget},
 //       {"fixup_riscv_pcrel_lo12_i", 20, 12,

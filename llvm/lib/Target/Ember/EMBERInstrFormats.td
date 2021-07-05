@@ -178,3 +178,76 @@ multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, 
 
 
 
+//======================================================================================================================
+// EMBER LDI OpCodes with 16-bit Immediate value: 
+//  <|opcode|cond|h|0|s|imm16|>
+//======================================================================================================================
+multiclass EMBERInstr_ldi_lohis_i<bits<6> op, bits<3> cond, string condstr, list<dag> pattern, InstrItinClass itin>
+{
+    def _lo : EMBERInst<op, cond, (outs GPR32:$rd), (ins uimm32:$imm32), "ldi" # condstr # "\t$rd, \t$imm32", pattern, itin>
+    {
+        bits<4>  rd;        // Dest Reg
+        bits<32> imm32;     // LDI low unsigned (fill hi16 with 0)
+    
+        // 4 bits for Dest Reg
+        let Inst{22-19} = rd;
+
+        // 3 flag bits 
+        let Inst{18-16} = 0b000;   // |lo|0|unsigned|
+
+        // low 16 bits of imm32 (code will validate, and add an additional ldih if needed to handle the high bits)
+        let Inst{15-0} = imm32{15-0};
+    }
+    def _los : EMBERInst<op, cond, (outs GPR32:$rd), (ins simm16:$simm16), "ldis" # condstr # "\t$rd, \t$simm16", pattern, itin>
+    {
+        bits<4>  rd;        // Dest Reg
+        bits<16> simm16;    // LDI low signed (fill hi16 with bit 15 of $simm16)
+    
+        // 4 bits for Dest Reg
+        let Inst{22-19} = rd;
+
+        // 3 flag bits 
+        let Inst{18-16} = 0b001;   // |lo|0|signed|
+
+        // 16 bits for imm16
+        let Inst{15-0} = simm16;
+    }
+    def _hi : EMBERInst<op, cond, (outs GPR32:$rd), (ins uimm16:$imm16), "ldih" # condstr # "\t$rd, \t$imm16", pattern, itin>
+    {
+        bits<4>  rd;        // Dest Reg
+        bits<16> imm16;     // LDI high unsigned ((imm16<<16)|(0x0000FFFF&lo16))
+    
+        // 4 bits for Dest Reg
+        let Inst{22-19} = rd;
+
+        // 3 flag bits 
+        let Inst{18-16} = 0b100;   // |hi|0|unsigned|
+
+        // 16 bits for imm16
+        let Inst{15-0} = imm16;
+    }
+}
+
+//======================================================================================================================
+// Add in the condition codes and aliases
+//======================================================================================================================
+multiclass EMBERInstr_ldi_cond<bits<6> op, list<dag> pattern, InstrItinClass itin>
+{
+    defm _al : EMBERInstr_ldi_lohis_i<op, 0x0, "", pattern, itin>;
+                                         
+    defm _eq : EMBERInstr_ldi_lohis_i<op, 0x1, ".eq", pattern, itin>; 
+    def : MnemonicAlias<".z", ".eq">;
+                                         
+    defm _ne : EMBERInstr_ldi_lohis_i<op, 0x2, ".ne", pattern, itin>;
+    def : MnemonicAlias<".nz", ".ne">;
+                                         
+    defm _ng : EMBERInstr_ldi_lohis_i<op, 0x3, ".lt", pattern, itin>;
+    def : MnemonicAlias<".ng", ".lt">;
+                                         
+    defm _ge : EMBERInstr_ldi_lohis_i<op, 0x4, ".ge", pattern, itin>;
+    def : MnemonicAlias<".p", ".ge">;
+                                         
+    defm _c  : EMBERInstr_ldi_lohis_i<op, 0x5, ".c" , pattern, itin>;
+    defm _nc : EMBERInstr_ldi_lohis_i<op, 0x6, ".nc", pattern, itin>;
+    defm _v  : EMBERInstr_ldi_lohis_i<op, 0x7, ".v" , pattern, itin>;
+}

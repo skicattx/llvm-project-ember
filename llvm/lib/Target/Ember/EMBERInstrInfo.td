@@ -85,3 +85,6 @@ defm XOR : EMBERInstr_rd_ra_rb_imm14<0x13, "xor", [], NoItinerary>;
 defm BRA : EMBERInstr_bra_cond<0x04, "bra", [], NoItinerary>;
 defm BRL : EMBERInstr_bra_cond<0x05, "brl", [], NoItinerary>;
 
+// LDI OpCode (+LDIS, LDIH)
+defm LDI : EMBERInstr_ldi_cond<0x19, [], NoItinerary>;
+

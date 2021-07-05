@@ -12,6 +12,7 @@
 #include "MCTargetDesc/EMBERMatInt.h"
 #include "MCTargetDesc/EMBERTargetStreamer.h"
 #include "TargetInfo/EMBERTargetInfo.h"
+#include "EMBERInstrInfo.h"
 #include <string>
 
 #include "llvm/ADT/STLExtras.h"
@@ -77,7 +78,7 @@ class EMBERAsmParser : public MCTargetAsmParser
 //                                       unsigned Kind) override;
 
   bool generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo,
-                                  int64_t Lower, int64_t Upper, Twine Msg);
+                                  int64_t Lower, uint64_t Upper, Twine Msg);
 
 //  bool parsePrimaryExpr(const MCExpr*& Res, SMLoc& EndLoc, AsmTypeInfo* TypeInfo) override;
 
@@ -96,6 +97,9 @@ class EMBERAsmParser : public MCTargetAsmParser
   // Helper to actually emit an instruction to the MCStreamer. Also, when
   // possible, compression of the instruction is performed.
   void emitToStreamer(MCStreamer &S, const MCInst &Inst);
+
+  // Emit one or two LDI/LDIH instructions depending on the size of the imm value
+  void emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out);
 
 /*
   // Helper to emit a combination of LUI, ADDI(W), and SLLI instructions that
@@ -412,7 +416,7 @@ public:
   {
       int64_t Imm;
 
-      // Must be of 'immediate' type but not a constant.
+      // Must be of 'immediate' type but not a constant (due to relaxation, a constant offset is dangerous, so we just don't allow them).
       if (!isImm() || evaluateConstantImm(getImm(), Imm))
         return false;
     
@@ -535,14 +539,23 @@ public:
         return IsConstantImm && isUInt<14>(Imm);
     }
 
-    bool isSImm22() const 
+    bool isSImm16() const 
     {
         int64_t Imm;
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isInt<22>(Imm);
+        return IsConstantImm && (isInt<16>(Imm) || isUInt<16>(Imm));
     }
+    bool isUImm16() const
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isUInt<16>(Imm);
+    }
+
 
     bool isUImm22() const 
     {
@@ -551,6 +564,22 @@ public:
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
         return IsConstantImm && isUInt<22>(Imm);
+    }
+
+    bool isUImm32() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+
+        if (evaluateConstantImm(getImm(), Imm))
+        {
+            // If it's a literal imm, then check the bits
+            return isUInt<32>(Imm);
+        }
+
+        // otherwise, it's a label or whatever, and will need a fixup anyway, so just return true for now
+        return true;
     }
 
 /*  bool isUImm5() const {
@@ -734,24 +763,28 @@ public:
     /// getEndLoc - Gets location of the last token of this operand
     SMLoc getEndLoc() const override { return EndLoc; }
     
-    unsigned getReg() const override {
-      assert(Kind == KindTy::Register && "Invalid type access!");
-      return Reg.RegNum.id();
+    unsigned getReg() const override 
+    {
+        assert(Kind == KindTy::Register && "Invalid type access!");
+        return Reg.RegNum.id();
     }
     
-    unsigned getUserReg() const {
+    unsigned getUserReg() const 
+    {
       assert(Kind == KindTy::UserRegister && "Invalid type access!");
       return UserReg.RegNum.id();
     }
     
-    const MCExpr *getImm() const {
-      assert(Kind == KindTy::Immediate && "Invalid type access!");
-      return Imm.Val;
+    const MCExpr *getImm() const 
+    {
+        assert(Kind == KindTy::Immediate && "Invalid type access!");
+        return Imm.Val;
     }
     
-    StringRef getToken() const {
-      assert(Kind == KindTy::Token && "Invalid type access!");
-      return Tok;
+    StringRef getToken() const
+    {
+        assert(Kind == KindTy::Token && "Invalid type access!");
+        return Tok;
     }
 
     void print(raw_ostream &OS) const override 
@@ -830,27 +863,30 @@ public:
 //     return Op;
 //   }
 
-  void addExpr(MCInst &Inst, const MCExpr *Expr) const {
-    assert(Expr && "Expr shouldn't be null!");
-    int64_t Imm = 0;
+  void addExpr(MCInst &Inst, const MCExpr *Expr) const
+  {
+      assert(Expr && "Expr shouldn't be null!");
+      int64_t Imm = 0;
 
-    bool IsConstant = evaluateConstantImm(Expr, Imm);
+      bool IsConstant = evaluateConstantImm(Expr, Imm);
 
-    if (IsConstant)
-      Inst.addOperand(MCOperand::createImm(Imm));
-    else
-      Inst.addOperand(MCOperand::createExpr(Expr));
+      if (IsConstant)
+          Inst.addOperand(MCOperand::createImm(Imm));
+      else
+          Inst.addOperand(MCOperand::createExpr(Expr));
   }
 
   // Used by the TableGen Code
-  void addRegOperands(MCInst &Inst, unsigned N) const {
-    assert(N == 1 && "Invalid number of operands!");
-    Inst.addOperand(MCOperand::createReg(getReg()));
+  void addRegOperands(MCInst &Inst, unsigned N) const 
+  {
+      assert(N == 1 && "Invalid number of operands!");
+      Inst.addOperand(MCOperand::createReg(getReg()));
   }
 
-  void addImmOperands(MCInst &Inst, unsigned N) const {
-    assert(N == 1 && "Invalid number of operands!");
-    addExpr(Inst, getImm());
+  void addImmOperands(MCInst &Inst, unsigned N) const
+  {
+      assert(N == 1 && "Invalid number of operands!");
+      addExpr(Inst, getImm());
   }
 
   void addFenceArgOperands(MCInst &Inst, unsigned N) const {
@@ -980,8 +1016,10 @@ unsigned EMBERAsmParser::validateTargetOperandClass(MCParsedAsmOperand &AsmOp,
 }
 */
 
-bool EMBERAsmParser::generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo, 
-                                                int64_t Lower, int64_t Upper,
+bool EMBERAsmParser::generateImmOutOfRangeError(OperandVector &Operands, 
+                                                uint64_t       ErrorInfo, 
+                                                int64_t        Lower, 
+                                                uint64_t       Upper,
                                                 Twine Msg = "immediate must be an integer in the range")
 {
     SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
@@ -1065,8 +1103,14 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
             return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 13), (1 << 13) - 1);
         case Match_InvalidUImm14:
             return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 14) - 1);
+        case Match_InvalidSImm16:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 15), (1 << 15) - 1);
+        case Match_InvalidUImm16:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 16) - 1);
+        case Match_InvalidUImm32:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, ((uint64_t)1 << 32) - 1);
         case Match_InvalidBranchTarget:
-            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 21), (1 << 21) - 1); // TODO: don't think we know yet..as this would be a fix-up...
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 21), (1 << 21) - 1, "Branch target must be a Register or Label. Constant literal offsets are not allowed.");
  /*
     case Match_InvalidImmZero: 
     {
@@ -2386,7 +2430,58 @@ void EMBERAsmParser::emitLoadStoreSymbol(MCInst &Inst, unsigned Opcode,
   emitAuipcInstPair(DestReg, TmpReg, Symbol, EMBERMCExpr::VK_EMBER_PCREL_HI,
                     Opcode, IDLoc, Out);
 }
+*/
 
+void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
+{
+    // If Imm fits in 16 bits, emit:
+    //      ldi rd, $xxxx
+    // 
+    // Otherwise, need ldi+ldih
+    //      ldi  rd, $llll
+    //      ldih rd, $hhhh
+    // 
+    MCOperand DestReg = Inst.getOperand(0);
+    MCOperand SourceImm = Inst.getOperand(1);
+    if (SourceImm.isImm())
+    {
+        uint64_t value = SourceImm.getImm();
+        if (static_cast<uint16_t>(value) == value)
+        {
+            emitToStreamer(Out, Inst);
+            return; 
+        }
+    }
+
+    unsigned LDIHOpcode = 0;
+    switch (Inst.getOpcode())
+    {
+    case EMBER::LDI_al_lo:
+        LDIHOpcode = EMBER::LDI_al_hi; break;
+    case EMBER::LDI_c_lo:
+        LDIHOpcode = EMBER::LDI_c_hi; break;
+    case EMBER::LDI_eq_lo:
+        LDIHOpcode = EMBER::LDI_eq_hi; break;
+    case EMBER::LDI_ge_lo:
+        LDIHOpcode = EMBER::LDI_ge_hi; break;
+    case EMBER::LDI_nc_lo:
+        LDIHOpcode = EMBER::LDI_nc_hi; break;
+    case EMBER::LDI_ne_lo:
+        LDIHOpcode = EMBER::LDI_ne_hi; break;
+    case EMBER::LDI_ng_lo:
+        LDIHOpcode = EMBER::LDI_ng_hi; break;
+    case EMBER::LDI_v_lo:
+        LDIHOpcode = EMBER::LDI_v_hi; break;
+    }
+
+    emitToStreamer(Out, Inst);
+
+    emitToStreamer(Out, MCInstBuilder(LDIHOpcode)
+        .addOperand(DestReg)
+        .addOperand(SourceImm));
+}
+
+/*
 void EMBERAsmParser::emitPseudoExtend(MCInst &Inst, bool SignExtend,
                                       int64_t Width, SMLoc IDLoc,
                                       MCStreamer &Out) {
@@ -2586,7 +2681,22 @@ bool EMBERAsmParser::processInstruction(MCInst         &Inst,
 {
     Inst.setLoc(IDLoc);
 
-
+    switch (Inst.getOpcode())
+    {
+    default:
+        break;
+        // For LDI opcode, determine if immediate value fits in 16 bits, or add an additional LDIH
+    case EMBER::LDI_al_lo:
+    case EMBER::LDI_c_lo:
+    case EMBER::LDI_eq_lo:
+    case EMBER::LDI_ge_lo:
+    case EMBER::LDI_nc_lo:
+    case EMBER::LDI_ne_lo:
+    case EMBER::LDI_ng_lo:
+    case EMBER::LDI_v_lo:
+        emitLDIImm(Inst, IDLoc, Out);
+        return false;
+    }
 
 
 

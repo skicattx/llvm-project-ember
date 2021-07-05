@@ -29,6 +29,7 @@
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "asm-printer"
@@ -60,7 +61,7 @@ namespace {
         bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo, const char *ExtraCode, raw_ostream &O) override;
         bool PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo, const char *ExtraCode, raw_ostream &O) override;
      
-        void LowerGETPCXAndEmitMCInsts(const MachineInstr *MI, const MCSubtargetInfo &STI);
+//         void LowerLDIOpCode(const MachineInstr *MI, const MCSubtargetInfo &STI);
      
     };
 } // end of anonymous namespace
@@ -162,10 +163,71 @@ static void EmitHiLo(MCStreamer &OutStreamer,  MCSymbol *GOTSym,
   EmitSETHI(OutStreamer, hi, RD, STI);
   EmitOR(OutStreamer, RD, lo, RD, STI);
 }
+*/
 
-void EMBERAsmPrinter::LowerGETPCXAndEmitMCInsts(const MachineInstr *MI,
-                                                const MCSubtargetInfo &STI)
-{
+// static void EmitLDIH(MCStreamer            &OutStreamer,
+//                      unsigned               Opcode,
+//                      MCOperand             &RD,
+//                      MCOperand             &Imm, 
+//                      const MCSubtargetInfo &STI) 
+// {
+//     MCInst Inst;
+//     Inst.setOpcode(Opcode);
+//     Inst.addOperand(RD);
+//     Inst.addOperand(Imm);
+//     OutStreamer.emitInstruction(Inst, STI);
+// }
+
+// void EMBERAsmPrinter::LowerLDIOpCode(const MachineInstr *MI, const MCSubtargetInfo &STI)
+// {
+//     const MachineOperand& ImmOp = MI->getOperand(2);
+//     assert(ImmOp.getType() == MachineOperand::MO_Immediate);
+// 
+//     uint64_t value = ImmOp.getCImm()->getZExtValue();
+//     if (static_cast<uint16_t>(value) == value)
+//         return; // Nothing to do
+// 
+//     // Need to put the upper 16-bits in another instruction
+// 
+//     // Get the dest register
+//     const MachineOperand& MO = MI->getOperand(0);
+//     MCOperand MCRegRD = MCOperand::createReg(MO.getReg());
+// 
+//     // Get the Imm high 16-bits
+//     MCOperand MCImm = MCOperand::createImm((value<<16) & 0xFFFF0000);
+// 
+//     switch (MI->getOpcode())
+//     {
+//         case EMBER::LDI_al_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_al_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_c_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_c_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_eq_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_eq_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_ge_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_ge_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_nc_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_nc_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_ne_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_ne_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_ng_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_ng_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//         case EMBER::LDI_v_lo:
+//             EmitLDIH(*OutStreamer, EMBER::LDI_v_hi, MCRegRD, MCImm, getSubtargetInfo());
+//             return;
+//     }
+// 
+//     llvm_unreachable("Unsupported ldi opcode variant or condition code");
+// }
+
+/*
   MCSymbol *GOTLabel   =
     OutContext.getOrCreateSymbol(Twine("_GLOBAL_OFFSET_TABLE_"));
 
@@ -190,7 +252,7 @@ void EMBERAsmPrinter::LowerGETPCXAndEmitMCInsts(const MachineInstr *MI,
       EmitHiLo(*OutStreamer, GOTLabel,
                EMBERMCExpr::VK_EMBER_H44, EMBERMCExpr::VK_EMBER_M44,
                MCRegOP, OutContext, STI);
-      MCOperand imm = MCOperand::createExpr(MCConstantExpr::create(12,
+      MCOperand imm = MCOperand:createExpr(MCConstantExpr::create(12,
                                                                    OutContext));
       EmitSHL(*OutStreamer, MCRegOP, imm, MCRegOP, STI);
       MCOperand lo = createEMBERMCOperand(EMBERMCExpr::VK_EMBER_L44,
@@ -246,19 +308,29 @@ void EMBERAsmPrinter::LowerGETPCXAndEmitMCInsts(const MachineInstr *MI,
   EmitADD(*OutStreamer, MCRegOP, RegO7, MCRegOP, STI);
 }
 */
+
 void EMBERAsmPrinter::emitInstruction(const MachineInstr *MI) 
 {
+//     switch (MI->getOpcode()) 
+//     {
+//         default:
+//             break;
+//         case TargetOpcode::DBG_VALUE:
+//             // FIXME: Debug Value.
+//             return;
+//         // For LDI opcode, determine if immediate value fits in 16 bits, or add an additional LDIH
+//         case EMBER::LDI_al_lo:
+//         case EMBER::LDI_c_lo:
+//         case EMBER::LDI_eq_lo:
+//         case EMBER::LDI_ge_lo:
+//         case EMBER::LDI_nc_lo:
+//         case EMBER::LDI_ne_lo:
+//         case EMBER::LDI_ng_lo:
+//         case EMBER::LDI_v_lo:
+//             LowerLDIOpCode(MI, getSubtargetInfo());
+//             return;
+//     }
 /*
-  switch (MI->getOpcode()) {
-  default: break;
-  case TargetOpcode::DBG_VALUE:
-    // FIXME: Debug Value.
-    return;
-  case SP::GETPCX:
-    LowerGETPCXAndEmitMCInsts(MI, getSubtargetInfo());
-    return;
-  }
-
   MachineBasicBlock::const_instr_iterator I = MI->getIterator();
   MachineBasicBlock::const_instr_iterator E = MI->getParent()->instr_end();
   do {
@@ -267,9 +339,6 @@ void EMBERAsmPrinter::emitInstruction(const MachineInstr *MI)
     EmitToStreamer(*OutStreamer, TmpInst);
   } while ((++I != E) && I->isInsideBundle()); // Delay slot check.
 */
-
-
-    int i=0; ++i;
 }
 
 void EMBERAsmPrinter::emitFunctionBodyStart() 

@@ -274,12 +274,7 @@ unsigned EMBERMCCodeEmitter::getBranchTargetOpValueSImm22(const MCInst          
     const MCExpr* Expr = MO.getExpr();
     MCExpr::ExprKind Kind = Expr->getKind();
 
-    // First determine if it is a fixed constant, rather than a symbol?
-//     if (MO.isImm())
-//         return MO.getImm();
-
-
-    // Otherwise, if it's a symbol, we can't resolve it until later, so add a 'fixup'
+    // Since it has to be a symbol, we can't resolve it until later, so add a 'fixup'
     EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
     if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None)
     {
@@ -417,13 +412,31 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
     }
     else if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None) 
     {
-        if (Desc.getOpcode() == 0)//EMBER::BRA_*)
+        switch (Desc.getOpcode())
         {
-            FixupKind = EMBER::fixup_ember_branch;
-        }
-        else
-        {
-            FixupKind = EMBER::fixup_ember_label_addr;
+            case EMBER::LDI_al_lo:
+            case EMBER::LDI_c_lo:
+            case EMBER::LDI_eq_lo:
+            case EMBER::LDI_ge_lo:
+            case EMBER::LDI_nc_lo:
+            case EMBER::LDI_ne_lo:
+            case EMBER::LDI_ng_lo:
+            case EMBER::LDI_v_lo:
+                FixupKind = EMBER::fixup_ember_ldi_label_addr_lo;
+                break;
+            case EMBER::LDI_al_hi:
+            case EMBER::LDI_c_hi:
+            case EMBER::LDI_eq_hi:
+            case EMBER::LDI_ge_hi:
+            case EMBER::LDI_nc_hi:
+            case EMBER::LDI_ne_hi:
+            case EMBER::LDI_ng_hi:
+            case EMBER::LDI_v_hi:
+                FixupKind = EMBER::fixup_ember_ldi_label_addr_hi;
+                break;
+            default:
+                FixupKind = EMBER::fixup_ember_label_addr;
+                break;
         }
     }
 

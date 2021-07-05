@@ -180,6 +180,22 @@ def uimm14 : Operand<i32>
     let EncoderMethod = "getImmOpValue";
 }
 
+def uimm16 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmUImmOperand<16>;
+    let EncoderMethod = "getImmOpValue";
+}
+def simm16 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmSImmOperand<16>;
+    let EncoderMethod = "getImmOpValue";
+}
+
+def uimm32 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmUImmOperand<32>;
+    let EncoderMethod = "getImmOpValue";
+}
 
 def BranchTargetAsmOperand : AsmOperandClass 
 {

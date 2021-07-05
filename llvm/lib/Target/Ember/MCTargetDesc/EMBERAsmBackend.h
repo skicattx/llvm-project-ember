@@ -43,7 +43,7 @@ public:
 
   unsigned getNumFixupKinds() const override 
   {
-    return 1;/*EMBER::NumTargetFixupKinds*/;
+      return EMBER::NumTargetFixupKinds;
   }
 
   void applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
