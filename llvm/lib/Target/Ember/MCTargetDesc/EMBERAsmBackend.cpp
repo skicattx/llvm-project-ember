@@ -47,10 +47,10 @@ const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const
       // EMBERFixupKinds.h.
       //
       // name                           offset bits    flags
-      {"fixup_ember_branch",            0,     22,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
-      {"fixup_ember_label_addr",        0,     14,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},  
-      {"fixup_ember_ldi_label_addr_lo", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
-      {"fixup_ember_ldi_label_addr_hi", 0,     16,     MCFixupKindInfo::FKF_IsPCRel | MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
+      {"fixup_ember_branch",            0,     22,     MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits | MCFixupKindInfo::FKF_IsPCRel},
+      {"fixup_ember_label_addr",        0,     14,     MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},  
+      {"fixup_ember_ldi_label_addr_lo", 0,     16,     MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits},
+      {"fixup_ember_ldi_label_addr_hi", 0,     16,     MCFixupKindInfo::FKF_IsTarget | MCFixupKindInfo::FKF_IsAlignedDownTo32Bits} };  // TODO: need one of these for each label imm bit count
 
     static_assert((array_lengthof(Infos)) == EMBER::NumTargetFixupKinds, "Not all fixup kinds added to Infos array");
 
@@ -171,101 +171,96 @@ static uint64_t adjustFixupValue(const MCFixup &Fixup, uint64_t Value,
 
   }
 }
-
+*/
 bool EMBERAsmBackend::evaluateTargetFixup(
-    const MCAssembler &Asm, const MCAsmLayout &Layout, const MCFixup &Fixup,
-    const MCFragment *DF, const MCValue &Target, uint64_t &Value,
-    bool &WasForced) {
-  const MCFixup *AUIPCFixup;
-  const MCFragment *AUIPCDF;
-  MCValue AUIPCTarget;
-  switch (Fixup.getTargetKind()) {
-  default:
-    llvm_unreachable("Unexpected fixup kind!");
-  case EMBER::fixup_riscv_pcrel_hi20:
-    AUIPCFixup = &Fixup;
-    AUIPCDF = DF;
-    AUIPCTarget = Target;
-    break;
-  case EMBER::fixup_riscv_pcrel_lo12_i:
-  case EMBER::fixup_riscv_pcrel_lo12_s: {
-    AUIPCFixup = cast<EMBERMCExpr>(Fixup.getValue())->getPCRelHiFixup(&AUIPCDF);
-    if (!AUIPCFixup) {
-      Asm.getContext().reportError(Fixup.getLoc(),
-                                   "could not find corresponding %pcrel_hi");
-      return true;
+    const MCAssembler   &Asm, 
+    const MCAsmLayout   &Layout, 
+    const MCFixup       &Fixup,
+    const MCFragment    *DF, 
+    const MCValue       &Target, 
+    uint64_t            &Value,
+    bool                &WasForced) 
+{
+    if (!Target.getSymA() || Target.getSymB())
+      return false;
+
+    const MCSymbolRefExpr *A = Target.getSymA();
+    const MCSymbol &SA = A->getSymbol();
+    if (A->getKind() != MCSymbolRefExpr::VK_None || SA.isUndefined())
+        return false;
+
+    auto *Writer = Asm.getWriterPtr();
+    if (!Writer)
+        return false;
+
+    bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
+    if (!IsResolved)
+        return false;
+
+    Value = Layout.getSymbolOffset(SA) + Target.getConstant();
+
+    switch (Fixup.getTargetKind())
+    {
+        default:
+            llvm_unreachable("Unexpected fixup kind!");
+        case EMBER::fixup_ember_branch:
+            Value -= Layout.getFragmentOffset(DF) + Fixup.getOffset();
+            Value = ((int64_t)Value)>>2;
+            break;
+        case EMBER::fixup_ember_label_addr:
+            break;
+        case EMBER::fixup_ember_ldi_label_addr_lo:
+            break;
+        case EMBER::fixup_ember_ldi_label_addr_hi:
+            Value = ((int64_t)Value)>>16;
+            break;
     }
 
-    // MCAssembler::evaluateFixup will emit an error for this case when it sees
-    // the %pcrel_hi, so don't duplicate it when also seeing the %pcrel_lo.
-    const MCExpr *AUIPCExpr = AUIPCFixup->getValue();
-    if (!AUIPCExpr->evaluateAsRelocatable(AUIPCTarget, &Layout, AUIPCFixup))
-      return true;
-    break;
-  }
-  }
+    if (shouldForceRelocation(Asm, Fixup, Target))
+    {
+        WasForced = true;
+        return false;
+    }
 
-  if (!AUIPCTarget.getSymA() || AUIPCTarget.getSymB())
-    return false;
-
-  const MCSymbolRefExpr *A = AUIPCTarget.getSymA();
-  const MCSymbol &SA = A->getSymbol();
-  if (A->getKind() != MCSymbolRefExpr::VK_None || SA.isUndefined())
-    return false;
-
-  auto *Writer = Asm.getWriterPtr();
-  if (!Writer)
-    return false;
-
-  bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(
-      Asm, SA, *AUIPCDF, false, true);
-  if (!IsResolved)
-    return false;
-
-  Value = Layout.getSymbolOffset(SA) + AUIPCTarget.getConstant();
-  Value -= Layout.getFragmentOffset(AUIPCDF) + AUIPCFixup->getOffset();
-
-  if (shouldForceRelocation(Asm, *AUIPCFixup, AUIPCTarget)) {
-    WasForced = true;
-    return false;
-  }
-
-  return true;
+    return true;
 }
-*/
-void EMBERAsmBackend::applyFixup(const MCAssembler &Asm, const MCFixup &Fixup,
-                                 const MCValue &Target,
-                                 MutableArrayRef<char> Data, uint64_t Value,
-                                 bool IsResolved,
-                                 const MCSubtargetInfo *STI) const 
+
+void EMBERAsmBackend::applyFixup(
+    const MCAssembler       &Asm, 
+    const MCFixup           &Fixup,
+    const MCValue           &Target,
+    MutableArrayRef<char>    Data, 
+    uint64_t                 Value,
+    bool                     IsResolved,
+    const MCSubtargetInfo   *STI) const 
 {
-  /*
-  MCFixupKind Kind = Fixup.getKind();
-  if (Kind >= FirstLiteralRelocationKind)
-    return;
-  MCContext &Ctx = Asm.getContext();
-  MCFixupKindInfo Info = getFixupKindInfo(Kind);
-  if (!Value)
-    return; // Doesn't change encoding.
-  // Apply any target-specific value adjustments.
-  Value = adjustFixupValue(Fixup, Value, Ctx);
+    MCFixupKind Kind = Fixup.getKind();
+    if (Kind >= FirstLiteralRelocationKind)
+        return;
 
-  // Shift the value into position.
-  Value <<= Info.TargetOffset;
+    MCContext &Ctx = Asm.getContext();
+    MCFixupKindInfo Info = getFixupKindInfo(Kind);
+    if (!Value)
+        return; // Doesn't change encoding.
 
-  unsigned Offset = Fixup.getOffset();
-  unsigned NumBytes = alignTo(Info.TargetSize + Info.TargetOffset, 8) / 8;
+    // Shift the value into position.
+    Value <<= Info.TargetOffset;
 
-  assert(Offset + NumBytes <= Data.size() && "Invalid fixup offset!");
+    unsigned Offset = Fixup.getOffset();
+    unsigned NumBytes = alignTo(Info.TargetSize + Info.TargetOffset, 8) / 8;
 
-  // For each byte of the fragment that the fixup touches, mask in the
-  // bits from the fixup value.
-  for (unsigned i = 0; i != NumBytes; ++i) {
-    Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
-  }
+    assert(Offset + NumBytes <= Data.size() && "Invalid fixup offset!");
 
-  */
+    // For each byte of the fragment that the fixup touches, mask in the
+    // bits from the fixup value.
+    for (unsigned i = 0; i != NumBytes; ++i) 
+    {
+        Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
+    }
 }
+
+
+
 /*
 // Linker relaxation may change code size. We have to insert Nops
 // for .align directive when linker relaxation enabled. So then Linker
