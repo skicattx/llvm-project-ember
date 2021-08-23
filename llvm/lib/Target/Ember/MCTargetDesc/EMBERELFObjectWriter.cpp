@@ -29,7 +29,7 @@ public:
                                unsigned Type) const override {
     // TODO: this is very conservative, update once RISC-V psABI requirements
     //       are clarified.
-    return true;
+    return false;
   }
 
 protected:
@@ -38,20 +38,24 @@ protected:
 }
 
 EMBERELFObjectWriter::EMBERELFObjectWriter()
-    : MCELFObjectTargetWriter(false, ELF::ELFOSABI_NONE /*TODO Do we need to add one of these, or use one?*/, ELF::EM_EMBER, /*HasRelocationAddend*/ true) {}
+    : MCELFObjectTargetWriter(false, ELF::ELFOSABI_NONE /*TODO Do we need to add one of these, or use one?*/, ELF::EM_EMBER, /*HasRelocationAddend*/ false) {}
 
 EMBERELFObjectWriter::~EMBERELFObjectWriter() {}
 
-unsigned EMBERELFObjectWriter::getRelocType(MCContext &Ctx,
-                                            const MCValue &Target,
-                                            const MCFixup &Fixup,
-                                            bool IsPCRel) const {
+unsigned EMBERELFObjectWriter::getRelocType(MCContext      &Ctx,
+                                            const MCValue  &Target,
+                                            const MCFixup  &Fixup,
+                                            bool            IsPCRel) const 
+{
 //   const MCExpr *Expr = Fixup.getValue();
 //   // Determine the type of the relocation
 //   unsigned Kind = Fixup.getTargetKind();
 
+//  Ctx.reportError(Fixup.getLoc(), "Label is Undefined");
+
+
   // TODO:
-  return ELF::R_EMBER_NONE;
+  return ELF::R_EMBER_32;
   /*
   if (Kind >= FirstLiteralRelocationKind)
     return Kind - FirstLiteralRelocationKind;

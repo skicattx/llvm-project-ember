@@ -24,6 +24,7 @@ EMBERMCAsmInfo::EMBERMCAsmInfo(const Triple &TT)
     AlignmentIsInBytes = false;
     SupportsDebugInformation = true;
     ExceptionsType = ExceptionHandling::None;
+    HasSubsectionsViaSymbols = false;
 //   Data8bitsDirective = "\t.byte\t";
 //   Data16bitsDirective = "\t.half\t";
 //   Data32bitsDirective = "\t.word\t";

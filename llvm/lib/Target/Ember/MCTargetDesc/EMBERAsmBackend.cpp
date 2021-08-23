@@ -191,7 +191,7 @@ bool EMBERAsmBackend::evaluateTargetFixup(
 
     auto *Writer = Asm.getWriterPtr();
     if (!Writer)
-        return false;
+        return true;
 
     bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
     if (!IsResolved)
@@ -216,12 +216,6 @@ bool EMBERAsmBackend::evaluateTargetFixup(
             break;
     }
 
-    if (shouldForceRelocation(Asm, Fixup, Target))
-    {
-        WasForced = true;
-        return false;
-    }
-
     return true;
 }
 
@@ -241,7 +235,10 @@ void EMBERAsmBackend::applyFixup(
     MCContext &Ctx = Asm.getContext();
     MCFixupKindInfo Info = getFixupKindInfo(Kind);
     if (!Value)
-        return; // Doesn't change encoding.
+    {
+        IsResolved = true;
+        return; // Doesn't change encoding (We assume the bits are already 0 and just don't change them?)
+    }
 
     // Shift the value into position.
     Value <<= Info.TargetOffset;
@@ -257,6 +254,8 @@ void EMBERAsmBackend::applyFixup(
     {
         Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
     }
+
+    IsResolved = true;
 }
 
 

@@ -93,6 +93,11 @@ private:
   size_t calculateContentSize() const;
   */
 
+    void finish() override
+    {
+        // TODO: Enumerate Labels and report any undefined at this point
+    }
+
 public:
   MCELFStreamer &getStreamer();
   EMBERTargetELFStreamer(MCStreamer &S, const MCSubtargetInfo &STI);

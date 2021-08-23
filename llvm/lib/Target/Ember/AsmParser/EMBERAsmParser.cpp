@@ -44,12 +44,6 @@ using namespace llvm;
 
 #define DEBUG_TYPE "ember-asm-parser"
 
-// Include the auto-generated portion of the compress emitter.
-// #define GEN_COMPRESS_INSTR
-// #include "EMBERGenCompressInstEmitter.inc"
-
-// STATISTIC(EMBERNumInstrsCompressed,
-//           "Number of Ember Compressed instructions emitted");
 namespace 
 {
 struct EMBEROperand;
@@ -368,48 +362,48 @@ public:
 
   // True if operand is a symbol with no modifiers, or a constant with no
   // modifiers and isShiftedInt<N-1, 1>(Op).
-  template <int N> bool isBareSimmNLsb0() const {
-    int64_t Imm;
-
-    if (!isImm())
-      return false;
-    bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-    bool IsValid;
-    if (!IsConstantImm)
-      IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
-    else
-      IsValid = isShiftedInt<N - 1, 1>(Imm);
-    return IsValid;
-  }
+//   template <int N> bool isBareSimmNLsb0() const {
+//     int64_t Imm;
+// 
+//     if (!isImm())
+//       return false;
+//     bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+//     bool IsValid;
+//     if (!IsConstantImm)
+//       IsValid = false/*EMBERAsmParser::classifySymbolRef(getImm())*/;
+//     else
+//       IsValid = isShiftedInt<N - 1, 1>(Imm);
+//     return IsValid;
+//   }
 
   // Predicate methods for AsmOperands defined in EMBERInstrInfo.td
 
-  bool isBareSymbol() const {
-    int64_t Imm;
-
-    // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm))
-      return false;
-    return false;/*EMBERAsmParser::classifySymbolRef(getImm());*/
-  }
-
-  bool isCallSymbol() const {
-    int64_t Imm;
-
-    // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm))
-      return false;
-    return true;
-  }
-
-  bool isPseudoJumpSymbol() const {
-    int64_t Imm;
-
-    // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm))
-      return false;
-    return true;
-  }
+//   bool isBareSymbol() const {
+//     int64_t Imm;
+// 
+//     // Must be of 'immediate' type but not a constant.
+//     if (!isImm() || evaluateConstantImm(getImm(), Imm))
+//       return false;
+//     return false;/*EMBERAsmParser::classifySymbolRef(getImm());*/
+//   }
+// 
+//   bool isCallSymbol() const {
+//     int64_t Imm;
+// 
+//     // Must be of 'immediate' type but not a constant.
+//     if (!isImm() || evaluateConstantImm(getImm(), Imm))
+//       return false;
+//     return true;
+//   }
+// 
+//   bool isPseudoJumpSymbol() const {
+//     int64_t Imm;
+// 
+//     // Must be of 'immediate' type but not a constant.
+//     if (!isImm() || evaluateConstantImm(getImm(), Imm))
+//       return false;
+//     return true;
+//   }
 
 
   bool isBranchTarget() const
@@ -419,47 +413,53 @@ public:
       // Must be of 'immediate' type but not a constant (due to relaxation, a constant offset is dangerous, so we just don't allow them).
       if (!isImm() || evaluateConstantImm(getImm(), Imm))
         return false;
-    
+
+      // Is it defined
+//       const MCExpr* Val = getImm();
+//       auto* SVal = dyn_cast<MCSymbolRefExpr>(Val);
+//       if (!SVal || SVal->getSymbol().isUndefined())
+//           return false;
+
       return true;
   }
 
-  bool isTPRelAddSymbol() const {
-    int64_t Imm;
-
-    // Must be of 'immediate' type but not a constant.
-    if (!isImm() || evaluateConstantImm(getImm(), Imm))
-      return false;
-    return true;
-  }
-
-  bool isCSRSystemRegister() const { return isSystemRegister(); }
-
-//   bool isVTypeI() const { return isVType(); }
-
-  /// Return true if the operand is a valid for the fence instruction e.g.
-  /// ('iorw').
-  bool isFenceArg() const {
-    if (!isImm())
-      return false;
-    const MCExpr *Val = getImm();
-    auto *SVal = dyn_cast<MCSymbolRefExpr>(Val);
-    if (!SVal || SVal->getKind() != MCSymbolRefExpr::VK_None)
-      return false;
-
-    StringRef Str = SVal->getSymbol().getName();
-    // Letters must be unique, taken from 'iorw', and in ascending order. This
-    // holds as long as each individual character is one of 'iorw' and is
-    // greater than the previous character.
-    char Prev = '\0';
-    for (char c : Str) {
-      if (c != 'i' && c != 'o' && c != 'r' && c != 'w')
-        return false;
-      if (c <= Prev)
-        return false;
-      Prev = c;
-    }
-    return true;
-  }
+//   bool isTPRelAddSymbol() const {
+//     int64_t Imm;
+// 
+//     // Must be of 'immediate' type but not a constant.
+//     if (!isImm() || evaluateConstantImm(getImm(), Imm))
+//       return false;
+//     return true;
+//   }
+// 
+//   bool isCSRSystemRegister() const { return isSystemRegister(); }
+// 
+// //   bool isVTypeI() const { return isVType(); }
+// 
+//   /// Return true if the operand is a valid for the fence instruction e.g.
+//   /// ('iorw').
+//   bool isFenceArg() const {
+//     if (!isImm())
+//       return false;
+//     const MCExpr *Val = getImm();
+//     auto *SVal = dyn_cast<MCSymbolRefExpr>(Val);
+//     if (!SVal || SVal->getKind() != MCSymbolRefExpr::VK_None)
+//       return false;
+// 
+//     StringRef Str = SVal->getSymbol().getName();
+//     // Letters must be unique, taken from 'iorw', and in ascending order. This
+//     // holds as long as each individual character is one of 'iorw' and is
+//     // greater than the previous character.
+//     char Prev = '\0';
+//     for (char c : Str) {
+//       if (c != 'i' && c != 'o' && c != 'r' && c != 'w')
+//         return false;
+//       if (c <= Prev)
+//         return false;
+//       Prev = c;
+//     }
+//     return true;
+//   }
 
   /// Return true if the operand is a valid floating point rounding mode.
 /*
@@ -577,6 +577,11 @@ public:
             // If it's a literal imm, then check the bits
             return isUInt<32>(Imm);
         }
+
+//         const MCExpr* Val = getImm();
+//         auto* SVal = dyn_cast<MCSymbolRefExpr>(Val);
+//         if (!SVal || SVal->getSymbol().isUndefined())
+//             return false;
 
         // otherwise, it's a label or whatever, and will need a fixup anyway, so just return true for now
         return true;
@@ -1020,7 +1025,7 @@ bool EMBERAsmParser::generateImmOutOfRangeError(OperandVector &Operands,
                                                 uint64_t       ErrorInfo, 
                                                 int64_t        Lower, 
                                                 uint64_t       Upper,
-                                                Twine Msg = "immediate must be an integer in the range")
+                                                Twine Msg = "Immediate must be an integer in the range")
 {
     SMLoc ErrorLoc = ((EMBEROperand &)*Operands[ErrorInfo]).getStartLoc();
     return Error(ErrorLoc, Msg + " [" + Twine(Lower) + ", " + Twine(Upper) + "]");
@@ -1108,7 +1113,7 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
         case Match_InvalidUImm16:
             return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 16) - 1);
         case Match_InvalidUImm32:
-            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, ((uint64_t)1 << 32) - 1);
+            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, ((uint64_t)1 << 32) - 1, "Immediate or Label must resolve to a value in the range");
         case Match_InvalidBranchTarget:
             return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 21), (1 << 21) - 1, "Branch target must be a Register or Label. Constant literal offsets are not allowed.");
  /*
@@ -1887,407 +1892,50 @@ bool EMBERAsmParser::ParseInstruction(ParseInstructionInfo &Info,
     return false;
 }
 
-/*
-bool EMBERAsmParser::classifySymbolRef(const MCExpr *Expr,
-                                       EMBERMCExpr::VariantKind &Kind) {
-  Kind = EMBERMCExpr::VK_EMBER_None;
+bool EMBERAsmParser::ParseDirective(AsmToken DirectiveID) 
+{
+    // This returns false if this function recognizes the directive
+    // regardless of whether it is successfully handles or reports an
+    // error. Otherwise it returns true to give the generic parser a
+    // chance at recognizing it.
+    StringRef IDVal = DirectiveID.getString();
 
-  if (const EMBERMCExpr *RE = dyn_cast<EMBERMCExpr>(Expr)) {
-    Kind = RE->getKind();
-    Expr = RE->getSubExpr();
-  }
+    if (IDVal == ".set_addr")
+    {
+        MCAsmParser& Parser = getParser();
 
-  MCValue Res;
-  MCFixup Fixup;
-  if (Expr->evaluateAsRelocatable(Res, nullptr, &Fixup))
-    return Res.getRefKind() == EMBERMCExpr::VK_EMBER_None;
-  return false;
-}
-*/
-bool EMBERAsmParser::ParseDirective(AsmToken DirectiveID) {
-  // This returns false if this function recognizes the directive
-  // regardless of whether it is successfully handles or reports an
-  // error. Otherwise it returns true to give the generic parser a
-  // chance at recognizing it.
-//  StringRef IDVal = DirectiveID.getString();
+        // Get the address value token.
+        AsmToken Tok = Parser.getTok();
 
-//   if (IDVal == ".option")
-//     return parseDirectiveOption();
-//   else if (IDVal == ".attribute")
-//     return parseDirectiveAttribute();
+        // At the moment only constant value addresses are supported.
+        if (Tok.isNot(AsmToken::Integer))
+            return Error(Parser.getTok().getLoc(), "unexpected token, expected identifier");
 
-//   MCAsmParser& Parser = getParser();
-// 
-//   // Get the option token.
-//   AsmToken Tok = Parser.getTok();
-// 
-//   Parser.Lex();
-// 
-//   AsmToken Tok2 = Parser.getTok();
+        const MCExpr* AttrExpr;
+        int64_t Tag;
+        SMLoc TagLoc;
+
+        TagLoc = Parser.getTok().getLoc();
+        if (Parser.parseExpression(AttrExpr))
+            return true;
+
+        const MCConstantExpr* CE = dyn_cast<MCConstantExpr>(AttrExpr);
+        if (check(!CE, TagLoc, "expected numeric constant"))
+            return true;
+
+        Tag = CE->getValue();
+
+        // TODO: Where to store this address so it can be added in to the values in EMBERAsmBackend::evaluateTargetFixup()
 
 
-  return true;
-}
-/*
-bool EMBERAsmParser::parseDirectiveOption() {
-  MCAsmParser &Parser = getParser();
-  // Get the option token.
-  AsmToken Tok = Parser.getTok();
-  // At the moment only identifiers are supported.
-  if (Tok.isNot(AsmToken::Identifier))
-    return Error(Parser.getTok().getLoc(),
-                 "unexpected token, expected identifier");
+//         MCAssembler& MCA = getAssembler();
+//         auto& MAB = static_cast<EMBERAsmBackend&>(MCA.getBackend());
 
-  StringRef Option = Tok.getIdentifier();
 
-  if (Option == "push") {
-    getTargetStreamer().emitDirectiveOptionPush();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    pushFeatureBits();
-    return false;
-  }
-
-  if (Option == "pop") {
-    SMLoc StartLoc = Parser.getTok().getLoc();
-    getTargetStreamer().emitDirectiveOptionPop();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    if (popFeatureBits())
-      return Error(StartLoc, ".option pop with no .option push");
-
-    return false;
-  }
-
-  if (Option == "rvc") {
-    getTargetStreamer().emitDirectiveOptionRVC();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    setFeatureBits(EMBER::FeatureStdExtC, "c");
-    return false;
-  }
-
-  if (Option == "norvc") {
-    getTargetStreamer().emitDirectiveOptionNoRVC();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    clearFeatureBits(EMBER::FeatureStdExtC, "c");
-    return false;
-  }
-
-  if (Option == "pic") {
-    getTargetStreamer().emitDirectiveOptionPIC();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    ParserOptions.IsPicEnabled = true;
-    return false;
-  }
-
-  if (Option == "nopic") {
-    getTargetStreamer().emitDirectiveOptionNoPIC();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    ParserOptions.IsPicEnabled = false;
-    return false;
-  }
-
-  if (Option == "relax") {
-    getTargetStreamer().emitDirectiveOptionRelax();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    setFeatureBits(EMBER::FeatureRelax, "relax");
-    return false;
-  }
-
-  if (Option == "norelax") {
-    getTargetStreamer().emitDirectiveOptionNoRelax();
-
-    Parser.Lex();
-    if (Parser.getTok().isNot(AsmToken::EndOfStatement))
-      return Error(Parser.getTok().getLoc(),
-                   "unexpected token, expected end of statement");
-
-    clearFeatureBits(EMBER::FeatureRelax, "relax");
-    return false;
-  }
-
-  // Unknown option.
-  Warning(Parser.getTok().getLoc(),
-          "unknown option, expected 'push', 'pop', 'rvc', 'norvc', 'relax' or "
-          "'norelax'");
-  Parser.eatToEndOfStatement();
-  return false;
-}
-
-/// parseDirectiveAttribute
-///  ::= .attribute expression ',' ( expression | "string" )
-///  ::= .attribute identifier ',' ( expression | "string" )
-bool EMBERAsmParser::parseDirectiveAttribute() {
-  MCAsmParser &Parser = getParser();
-  int64_t Tag;
-  SMLoc TagLoc;
-  TagLoc = Parser.getTok().getLoc();
-  if (Parser.getTok().is(AsmToken::Identifier)) {
-    StringRef Name = Parser.getTok().getIdentifier();
-    Optional<unsigned> Ret =
-        ELFAttrs::attrTypeFromString(Name, EMBERAttrs::EMBERAttributeTags);
-    if (!Ret.hasValue()) {
-      Error(TagLoc, "attribute name not recognised: " + Name);
-      return false;
     }
-    Tag = Ret.getValue();
-    Parser.Lex();
-  } else {
-    const MCExpr *AttrExpr;
 
-    TagLoc = Parser.getTok().getLoc();
-    if (Parser.parseExpression(AttrExpr))
-      return true;
-
-    const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(AttrExpr);
-    if (check(!CE, TagLoc, "expected numeric constant"))
-      return true;
-
-    Tag = CE->getValue();
-  }
-
-  if (Parser.parseToken(AsmToken::Comma, "comma expected"))
     return true;
-
-  StringRef StringValue;
-  int64_t IntegerValue = 0;
-  bool IsIntegerValue = true;
-
-  // Ember attributes have a string value if the tag number is odd
-  // and an integer value if the tag number is even.
-  if (Tag % 2)
-    IsIntegerValue = false;
-
-  SMLoc ValueExprLoc = Parser.getTok().getLoc();
-  if (IsIntegerValue) {
-    const MCExpr *ValueExpr;
-    if (Parser.parseExpression(ValueExpr))
-      return true;
-
-    const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(ValueExpr);
-    if (!CE)
-      return Error(ValueExprLoc, "expected numeric constant");
-    IntegerValue = CE->getValue();
-  } else {
-    if (Parser.getTok().isNot(AsmToken::String))
-      return Error(Parser.getTok().getLoc(), "expected string constant");
-
-    StringValue = Parser.getTok().getStringContents();
-    Parser.Lex();
-  }
-
-  if (Parser.parseToken(AsmToken::EndOfStatement,
-                        "unexpected token in '.attribute' directive"))
-    return true;
-
-  if (Tag == EMBERAttrs::ARCH) {
-    StringRef Arch = StringValue;
-    if (Arch.consume_front("rv32"))
-      clearFeatureBits(EMBER::Feature64Bit, "64bit");
-    else if (Arch.consume_front("rv64"))
-      setFeatureBits(EMBER::Feature64Bit, "64bit");
-    else
-      return Error(ValueExprLoc, "bad arch string " + Arch);
-
-    // .attribute arch overrides the current architecture, so unset all
-    // currently enabled extensions
-    clearFeatureBits(EMBER::FeatureRV32E, "e");
-    clearFeatureBits(EMBER::FeatureStdExtM, "m");
-    clearFeatureBits(EMBER::FeatureStdExtA, "a");
-    clearFeatureBits(EMBER::FeatureStdExtF, "f");
-    clearFeatureBits(EMBER::FeatureStdExtD, "d");
-    clearFeatureBits(EMBER::FeatureStdExtC, "c");
-    clearFeatureBits(EMBER::FeatureStdExtB, "experimental-b");
-    clearFeatureBits(EMBER::FeatureStdExtV, "experimental-v");
-    clearFeatureBits(EMBER::FeatureExtZfh, "experimental-zfh");
-    clearFeatureBits(EMBER::FeatureExtZba, "experimental-zba");
-    clearFeatureBits(EMBER::FeatureExtZbb, "experimental-zbb");
-    clearFeatureBits(EMBER::FeatureExtZbc, "experimental-zbc");
-    clearFeatureBits(EMBER::FeatureExtZbe, "experimental-zbe");
-    clearFeatureBits(EMBER::FeatureExtZbf, "experimental-zbf");
-    clearFeatureBits(EMBER::FeatureExtZbm, "experimental-zbm");
-    clearFeatureBits(EMBER::FeatureExtZbp, "experimental-zbp");
-    clearFeatureBits(EMBER::FeatureExtZbproposedc, "experimental-zbproposedc");
-    clearFeatureBits(EMBER::FeatureExtZbr, "experimental-zbr");
-    clearFeatureBits(EMBER::FeatureExtZbs, "experimental-zbs");
-    clearFeatureBits(EMBER::FeatureExtZbt, "experimental-zbt");
-    clearFeatureBits(EMBER::FeatureExtZvamo, "experimental-zvamo");
-    clearFeatureBits(EMBER::FeatureStdExtZvlsseg, "experimental-zvlsseg");
-
-    while (!Arch.empty()) {
-      bool DropFirst = true;
-      if (Arch[0] == 'i')
-        clearFeatureBits(EMBER::FeatureRV32E, "e");
-      else if (Arch[0] == 'e')
-        setFeatureBits(EMBER::FeatureRV32E, "e");
-      else if (Arch[0] == 'g') {
-        clearFeatureBits(EMBER::FeatureRV32E, "e");
-        setFeatureBits(EMBER::FeatureStdExtM, "m");
-        setFeatureBits(EMBER::FeatureStdExtA, "a");
-        setFeatureBits(EMBER::FeatureStdExtF, "f");
-        setFeatureBits(EMBER::FeatureStdExtD, "d");
-      } else if (Arch[0] == 'm')
-        setFeatureBits(EMBER::FeatureStdExtM, "m");
-      else if (Arch[0] == 'a')
-        setFeatureBits(EMBER::FeatureStdExtA, "a");
-      else if (Arch[0] == 'f')
-        setFeatureBits(EMBER::FeatureStdExtF, "f");
-      else if (Arch[0] == 'd') {
-        setFeatureBits(EMBER::FeatureStdExtF, "f");
-        setFeatureBits(EMBER::FeatureStdExtD, "d");
-      } else if (Arch[0] == 'c') {
-        setFeatureBits(EMBER::FeatureStdExtC, "c");
-      } else if (Arch[0] == 'b') {
-        setFeatureBits(EMBER::FeatureStdExtB, "experimental-b");
-      } else if (Arch[0] == 'v') {
-        setFeatureBits(EMBER::FeatureStdExtV, "experimental-v");
-      } else if (Arch[0] == 's' || Arch[0] == 'x' || Arch[0] == 'z') {
-        StringRef Ext =
-            Arch.take_until([](char c) { return ::isdigit(c) || c == '_'; });
-        if (Ext == "zba")
-          setFeatureBits(EMBER::FeatureExtZba, "experimental-zba");
-        else if (Ext == "zbb")
-          setFeatureBits(EMBER::FeatureExtZbb, "experimental-zbb");
-        else if (Ext == "zbc")
-          setFeatureBits(EMBER::FeatureExtZbc, "experimental-zbc");
-        else if (Ext == "zbe")
-          setFeatureBits(EMBER::FeatureExtZbe, "experimental-zbe");
-        else if (Ext == "zbf")
-          setFeatureBits(EMBER::FeatureExtZbf, "experimental-zbf");
-        else if (Ext == "zbm")
-          setFeatureBits(EMBER::FeatureExtZbm, "experimental-zbm");
-        else if (Ext == "zbp")
-          setFeatureBits(EMBER::FeatureExtZbp, "experimental-zbp");
-        else if (Ext == "zbproposedc")
-          setFeatureBits(EMBER::FeatureExtZbproposedc,
-                         "experimental-zbproposedc");
-        else if (Ext == "zbr")
-          setFeatureBits(EMBER::FeatureExtZbr, "experimental-zbr");
-        else if (Ext == "zbs")
-          setFeatureBits(EMBER::FeatureExtZbs, "experimental-zbs");
-        else if (Ext == "zbt")
-          setFeatureBits(EMBER::FeatureExtZbt, "experimental-zbt");
-        else if (Ext == "zfh")
-          setFeatureBits(EMBER::FeatureExtZfh, "experimental-zfh");
-        else if (Ext == "zvamo")
-          setFeatureBits(EMBER::FeatureExtZvamo, "experimental-zvamo");
-        else if (Ext == "zvlsseg")
-          setFeatureBits(EMBER::FeatureStdExtZvlsseg, "experimental-zvlsseg");
-        else
-          return Error(ValueExprLoc, "bad arch string " + Ext);
-        Arch = Arch.drop_until([](char c) { return ::isdigit(c) || c == '_'; });
-        DropFirst = false;
-      } else
-        return Error(ValueExprLoc, "bad arch string " + Arch);
-
-      if (DropFirst)
-        Arch = Arch.drop_front(1);
-      int major = 0;
-      int minor = 0;
-      Arch.consumeInteger(10, major);
-      Arch.consume_front("p");
-      Arch.consumeInteger(10, minor);
-      Arch = Arch.drop_while([](char c) { return c == '_'; });
-    }
-  }
-
-  if (IsIntegerValue)
-    getTargetStreamer().emitAttribute(Tag, IntegerValue);
-  else {
-    if (Tag != EMBERAttrs::ARCH) {
-      getTargetStreamer().emitTextAttribute(Tag, StringValue);
-    } else {
-      std::string formalArchStr = "rv32";
-      if (getFeatureBits(EMBER::Feature64Bit))
-        formalArchStr = "rv64";
-      if (getFeatureBits(EMBER::FeatureRV32E))
-        formalArchStr = (Twine(formalArchStr) + "e1p9").str();
-      else
-        formalArchStr = (Twine(formalArchStr) + "i2p0").str();
-
-      if (getFeatureBits(EMBER::FeatureStdExtM))
-        formalArchStr = (Twine(formalArchStr) + "_m2p0").str();
-      if (getFeatureBits(EMBER::FeatureStdExtA))
-        formalArchStr = (Twine(formalArchStr) + "_a2p0").str();
-      if (getFeatureBits(EMBER::FeatureStdExtF))
-        formalArchStr = (Twine(formalArchStr) + "_f2p0").str();
-      if (getFeatureBits(EMBER::FeatureStdExtD))
-        formalArchStr = (Twine(formalArchStr) + "_d2p0").str();
-      if (getFeatureBits(EMBER::FeatureStdExtC))
-        formalArchStr = (Twine(formalArchStr) + "_c2p0").str();
-      if (getFeatureBits(EMBER::FeatureStdExtB))
-        formalArchStr = (Twine(formalArchStr) + "_b0p93").str();
-      if (getFeatureBits(EMBER::FeatureStdExtV))
-        formalArchStr = (Twine(formalArchStr) + "_v0p10").str();
-      if (getFeatureBits(EMBER::FeatureExtZfh))
-        formalArchStr = (Twine(formalArchStr) + "_zfh0p1").str();
-      if (getFeatureBits(EMBER::FeatureExtZba))
-        formalArchStr = (Twine(formalArchStr) + "_zba0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbb))
-        formalArchStr = (Twine(formalArchStr) + "_zbb0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbc))
-        formalArchStr = (Twine(formalArchStr) + "_zbc0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbe))
-        formalArchStr = (Twine(formalArchStr) + "_zbe0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbf))
-        formalArchStr = (Twine(formalArchStr) + "_zbf0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbm))
-        formalArchStr = (Twine(formalArchStr) + "_zbm0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbp))
-        formalArchStr = (Twine(formalArchStr) + "_zbp0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbproposedc))
-        formalArchStr = (Twine(formalArchStr) + "_zbproposedc0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbr))
-        formalArchStr = (Twine(formalArchStr) + "_zbr0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbs))
-        formalArchStr = (Twine(formalArchStr) + "_zbs0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZbt))
-        formalArchStr = (Twine(formalArchStr) + "_zbt0p93").str();
-      if (getFeatureBits(EMBER::FeatureExtZvamo))
-        formalArchStr = (Twine(formalArchStr) + "_zvamo0p10").str();
-      if (getFeatureBits(EMBER::FeatureStdExtZvlsseg))
-        formalArchStr = (Twine(formalArchStr) + "_zvlsseg0p10").str();
-
-      getTargetStreamer().emitTextAttribute(Tag, formalArchStr);
-    }
-  }
-
-  return false;
 }
-*/
 
 void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst)
 {
