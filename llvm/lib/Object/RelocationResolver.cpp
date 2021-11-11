@@ -463,6 +463,41 @@ static uint64_t resolveRISCV(uint64_t Type, uint64_t Offset, uint64_t S,
   }
 }
 
+static bool supportsEMBER32(uint64_t Type) {
+  switch (Type) {
+  case ELF::R_EMBER_NONE:
+  case ELF::R_EMBER_32:
+  case ELF::R_EMBER_32_PCREL:
+  case ELF::R_EMBER_BRANCH:
+  case ELF::R_EMBER_LDI_LABEL_ADDR_LO:
+  case ELF::R_EMBER_LDI_LABEL_ADDR_HI:
+      return true;
+  default:
+    return false;
+  }
+}
+
+static uint64_t resolveEMBER32(uint64_t Type, uint64_t Offset, uint64_t S,
+                               uint64_t LocData, int64_t Addend) {
+    switch (Type) {
+    case ELF::R_EMBER_NONE:
+        return LocData;
+    case ELF::R_EMBER_32:
+        return LocData;                             // Debug
+    case ELF::R_EMBER_32_PCREL:
+        return (S + Addend - Offset) & 0xFFFFFFFF;  // Debug PC Rel?
+    case ELF::R_EMBER_BRANCH:
+        return (S + LocData - Offset) & 0xFFFFFFFF; // 24-bit >> 2
+    case ELF::R_EMBER_LDI_LABEL_ADDR_LO:
+        return (S + LocData) & 0xFFFFFFFF;          // 16-bit low value
+    case ELF::R_EMBER_LDI_LABEL_ADDR_HI:
+        return (S + LocData) & 0xFFFFFFFF;          // 16-bit high value >>16
+    default:
+        llvm_unreachable("Invalid relocation type");
+    }
+}
+
+
 static bool supportsCOFFX86(uint64_t Type) {
   switch (Type) {
   case COFF::IMAGE_REL_I386_SECREL:
@@ -710,6 +745,8 @@ getRelocationResolver(const ObjectFile &Obj) {
       return {supportsHexagon, resolveHexagon};
     case Triple::riscv32:
       return {supportsRISCV, resolveRISCV};
+    case Triple::ember:
+      return {supportsEMBER32, resolveEMBER32};
     default:
       return {nullptr, nullptr};
     }

@@ -275,7 +275,7 @@ unsigned EMBERMCCodeEmitter::getBranchTargetOpValueSImm22(const MCInst          
     MCExpr::ExprKind Kind = Expr->getKind();
 
     // Since it has to be a symbol, we can't resolve it until later, so add a 'fixup'
-    EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
+    EMBER::Fixups FixupKind = (EMBER::Fixups)100;// EMBER::fixup_ember_invalid;
     if (Kind == MCExpr::SymbolRef && cast<MCSymbolRefExpr>(Expr)->getKind() == MCSymbolRefExpr::VK_None)
     {
         FixupKind = EMBER::fixup_ember_branch;
@@ -328,7 +328,7 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
     MCInstrDesc const &Desc = MCII.get(MI.getOpcode());
     const MCExpr *Expr = MO.getExpr();
     MCExpr::ExprKind Kind = Expr->getKind();
-    EMBER::Fixups FixupKind = EMBER::fixup_ember_invalid;
+    EMBER::Fixups FixupKind = (EMBER::Fixups)110;// EMBER::fixup_ember_invalid;
 //   bool RelaxCandidate = false;
     if (Kind == MCExpr::Target) 
     {
@@ -435,7 +435,7 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
                 FixupKind = EMBER::fixup_ember_ldi_label_addr_hi;
                 break;
             default:
-                FixupKind = EMBER::fixup_ember_label_addr;
+                FixupKind = (EMBER::Fixups)120;// EMBER::fixup_ember_invalid;
                 break;
         }
     }

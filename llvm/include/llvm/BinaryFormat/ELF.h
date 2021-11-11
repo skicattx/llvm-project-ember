@@ -503,7 +503,6 @@ enum {
 // Ember specific e_flags
 enum : unsigned {
   EF_EMBER_NOREORDER = 0x00000001, // Don't reorder instructions
-  EF_EMBER_PIC       = 0x00000002, // Position independent code
 };
 
 // ELF Relocation types for ember

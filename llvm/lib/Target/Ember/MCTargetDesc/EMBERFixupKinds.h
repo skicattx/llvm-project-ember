@@ -24,7 +24,7 @@ enum Fixups
     fixup_ember_ldi_label_addr_lo,
     fixup_ember_ldi_label_addr_hi,
 
-    // fixup_riscv_invalid - used as a sentinel and a marker, must be last fixup
+    // fixup_ember_invalid - used as a sentinel and a marker, must be last fixup
     fixup_ember_invalid,
     NumTargetFixupKinds = fixup_ember_invalid - FirstTargetFixupKind
 };

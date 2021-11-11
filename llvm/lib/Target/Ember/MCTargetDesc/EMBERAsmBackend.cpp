@@ -30,9 +30,11 @@ Optional<MCFixupKind> EMBERAsmBackend::getFixupKind(StringRef Name) const
 #define ELF_RELOC(X, Y) .Case(#X, Y)
 #include "llvm/BinaryFormat/ELFRelocs/EMBER.def"
 #undef ELF_RELOC
-               .Case("BFD_RELOC_NONE", ELF::R_EMBER_NONE)
-               .Case("BFD_RELOC_32", ELF::R_EMBER_32)
-               .Default(-1u);
+            .Case("BFD_RELOC_NONE", ELF::R_EMBER_NONE)
+            .Case("BFD_RELOC_MIPS_JMP", ELF::R_EMBER_BRANCH) // ignore top 3 bits
+            .Case("BFD_RELOC_LO16", ELF::R_EMBER_LDI_LABEL_ADDR_LO)
+            .Case("BFD_RELOC_HI16", ELF::R_EMBER_LDI_LABEL_ADDR_HI)
+            .Default(-1u);
         if (Type != -1u)
             return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
     }
@@ -206,17 +208,14 @@ bool EMBERAsmBackend::evaluateTargetFixup(
         case EMBER::fixup_ember_branch:
             Value -= Layout.getFragmentOffset(DF) + Fixup.getOffset();
             Value = ((int64_t)Value)>>2;
-            break;
-        case EMBER::fixup_ember_label_addr:
-            break;
+            return true;    // Relative jumps should be OK? (at least in the same segment?)
         case EMBER::fixup_ember_ldi_label_addr_lo:
-            break;
+            return false;   // This will need to be fixed again in the linker
         case EMBER::fixup_ember_ldi_label_addr_hi:
             Value = ((int64_t)Value)>>16;
-            break;
+            return false;   // This will need to be fixed again in the linker
     }
 
-    return true;
 }
 
 void EMBERAsmBackend::applyFixup(
@@ -232,13 +231,13 @@ void EMBERAsmBackend::applyFixup(
     if (Kind >= FirstLiteralRelocationKind)
         return;
 
-    MCContext &Ctx = Asm.getContext();
+//     MCContext &Ctx = Asm.getContext();
     MCFixupKindInfo Info = getFixupKindInfo(Kind);
-    if (!Value)
-    {
-        IsResolved = true;
-        return; // Doesn't change encoding (We assume the bits are already 0 and just don't change them?)
-    }
+//     if (!Value)
+//     {
+//         IsResolved = true;
+//         return; // Doesn't change encoding (We assume the bits are already 0 and just don't change them?)
+//     }
 
     // Shift the value into position.
     Value <<= Info.TargetOffset;
