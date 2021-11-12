@@ -60,12 +60,12 @@ public:
   Register getFrameRegister(const MachineFunction &MF) const override;
 
   /// Return GPR register class.
-  virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
+//  virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
 
 private:
-  virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,
-                           int FrameIndex, uint64_t StackSize,
-                           int64_t SPOffset) const = 0;
+//   virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,
+//                            int FrameIndex, uint64_t StackSize,
+//                            int64_t SPOffset) const = 0;
 };
 
 } // end namespace llvm

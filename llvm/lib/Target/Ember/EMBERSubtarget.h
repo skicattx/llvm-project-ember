@@ -68,9 +68,8 @@ class EMBERSubtarget : public EMBERGenSubtargetInfo
 
 public:
   bool isPositionIndependent() const;
-  /// This overrides the PostRAScheduler bit in the SchedModel for each CPU.
-  bool enablePostRAScheduler() const override;
-  void getCriticalPathRCs(RegClassVector &CriticalPathRCs) const override;
+  bool enablePostRAScheduler() const override { return false; }
+//  void getCriticalPathRCs(RegClassVector &CriticalPathRCs) const override;
   CodeGenOpt::Level getOptLevelToEnablePostRAScheduler() const override;
 
   /// This constructor initializes the data members to match that

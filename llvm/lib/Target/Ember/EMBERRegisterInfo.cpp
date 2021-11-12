@@ -140,7 +140,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
                     << DebugStr(MF.getFrameInfo().getObjectAlign(FrameIndex))
                     << "\n");
 
-  eliminateFI(MI, FIOperandNum, FrameIndex, stackSize, spOffset);
+  //  eliminateFI(MI, FIOperandNum, FrameIndex, stackSize, spOffset);
 }
 
 Register EMBERRegisterInfo::

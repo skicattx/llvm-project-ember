@@ -35,14 +35,14 @@ using namespace llvm;
 // Pin the vtable to this file.
 void EMBERInstrInfo::anchor() {}
 
-EMBERInstrInfo::EMBERInstrInfo(const EMBERSubtarget &STI, unsigned UncondBr) :
+EMBERInstrInfo::EMBERInstrInfo(const EMBERSubtarget &STI) :
     EMBERGenInstrInfo(0/*EMBER::ADJCALLSTACKDOWN*/, 0/*EMBER::ADJCALLSTACKUP*/),
-    Subtarget(STI), 
-    UncondBrOpc(UncondBr)
+    Subtarget(STI) 
+//     UncondBrOpc(UncondBr)
 {
 }
 
-const EMBERInstrInfo *EMBERInstrInfo::create(EMBERSubtarget &STI) 
-{
-    return createEMBERSEInstrInfo(STI);
-}
+// const EMBERInstrInfo *EMBERInstrInfo::create(EMBERSubtarget &STI) 
+// {
+//     return createEMBERInstrInfo(STI);
+// }
