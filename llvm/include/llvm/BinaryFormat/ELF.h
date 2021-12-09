@@ -505,10 +505,6 @@ enum : unsigned {
   EF_EMBER_NOREORDER = 0x00000001, // Don't reorder instructions
 };
 
-// ELF Relocation types for ember
-enum {
-#include "ELFRelocs/EMBER.def"
-};
 
 // Mips Specific e_flags
 enum : unsigned {
@@ -677,6 +673,11 @@ enum {
 // ELF Relocation type for Sparc.
 enum {
 #include "ELFRelocs/Sparc.def"
+};
+
+// ELF Relocation type for Sparc.
+enum {
+#include "ELFRelocs/EMBER.def"
 };
 
 // AMDGPU specific e_flags.

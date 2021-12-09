@@ -27,9 +27,7 @@ public:
   // section plus offset.
   bool needsRelocateWithSymbol(const MCSymbol &Sym,
                                unsigned Type) const override {
-    // TODO: this is very conservative, update once RISC-V psABI requirements
-    //       are clarified.
-    return false;
+    return true;
   }
 
 protected:

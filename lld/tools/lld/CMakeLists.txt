@@ -18,6 +18,7 @@ target_link_libraries(lld
   lldMachO2
   lldMinGW
   lldWasm
+  LLVMEmberCodeGen
   )
 
 if(HAVE_LIBXAR)

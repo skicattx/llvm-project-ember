@@ -31,9 +31,9 @@ Optional<MCFixupKind> EMBERAsmBackend::getFixupKind(StringRef Name) const
 #include "llvm/BinaryFormat/ELFRelocs/EMBER.def"
 #undef ELF_RELOC
             .Case("BFD_RELOC_NONE", ELF::R_EMBER_NONE)
-            .Case("BFD_RELOC_MIPS_JMP", ELF::R_EMBER_BRANCH) // ignore top 3 bits
-            .Case("BFD_RELOC_LO16", ELF::R_EMBER_LDI_LABEL_ADDR_LO)
-            .Case("BFD_RELOC_HI16", ELF::R_EMBER_LDI_LABEL_ADDR_HI)
+//            .Case("BFD_RELOC_MIPS_JMP", ELF::R_EMBER_BRANCH) // ignore top 3 bits
+//            .Case("BFD_RELOC_LO16", ELF::R_EMBER_LDI_LABEL_ADDR_LO)
+//            .Case("BFD_RELOC_HI16", ELF::R_EMBER_LDI_LABEL_ADDR_HI)
             .Default(-1u);
         if (Type != -1u)
             return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
@@ -196,8 +196,8 @@ bool EMBERAsmBackend::evaluateTargetFixup(
         return true;
 
     bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
-    if (!IsResolved)
-        return false;
+//     if (!IsResolved)
+//         return false;
 
     Value = Layout.getSymbolOffset(SA) + Target.getConstant();
 
@@ -254,7 +254,7 @@ void EMBERAsmBackend::applyFixup(
         Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
     }
 
-    IsResolved = true;
+//    IsResolved = true;
 }
 
 

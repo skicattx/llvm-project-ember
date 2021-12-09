@@ -119,8 +119,7 @@ EMBERRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
 // FrameIndex represent objects inside a abstract stack.
 // We must replace FrameIndex with an stack/frame pointer
 // direct reference.
-void EMBERRegisterInfo::
-eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
+void EMBERRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
                     unsigned FIOperandNum, RegScavenger *RS) const {
   MachineInstr &MI = *II;
   MachineFunction &MF = *MI.getParent()->getParent();
