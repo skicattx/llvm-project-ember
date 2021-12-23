@@ -195,7 +195,7 @@ bool EMBERAsmBackend::evaluateTargetFixup(
     if (!Writer)
         return true;
 
-    bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
+//    bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
 //     if (!IsResolved)
 //         return false;
 
@@ -205,10 +205,17 @@ bool EMBERAsmBackend::evaluateTargetFixup(
     {
         default:
             llvm_unreachable("Unexpected fixup kind!");
-        case EMBER::fixup_ember_branch:
+        case EMBER::fixup_ember_branch: 
+        {
             Value -= Layout.getFragmentOffset(DF) + Fixup.getOffset();
-            Value = ((int64_t)Value)>>2;
-            return true;    // Relative jumps should be OK? (at least in the same segment?)
+            Value = ((int64_t)Value) >> 2;
+
+            // Mask the bits (for negative nunmbers)
+            const MCFixupKindInfo &kindInfo = getFixupKindInfo(Fixup.getKind()); 
+            uint64_t mask = 0xFFFFFFFF >> (32 - kindInfo.TargetSize);
+            Value &= mask;
+            return true; // Relative jumps should be OK? (at least in the same segment?)
+        }
         case EMBER::fixup_ember_ldi_label_addr_lo:
             return false;   // This will need to be fixed again in the linker
         case EMBER::fixup_ember_ldi_label_addr_hi:
