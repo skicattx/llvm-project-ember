@@ -414,24 +414,24 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
     {
         switch (Desc.getOpcode())
         {
-            case EMBER::LDI_al_lo:
-            case EMBER::LDI_c_lo:
-            case EMBER::LDI_eq_lo:
-            case EMBER::LDI_ge_lo:
-            case EMBER::LDI_nc_lo:
-            case EMBER::LDI_ne_lo:
-            case EMBER::LDI_ng_lo:
-            case EMBER::LDI_v_lo:
+            case EMBER::LDI_w_lo:
+            case EMBER::LDI_h_lo:
+            case EMBER::LDI_b_lo:
+            case EMBER::LDI_sh_lo:
+            case EMBER::LDI_sb_lo:
+            case EMBER::LDI_hh_lo:
+            case EMBER::LDI_bb_lo:
+            case EMBER::LDI_bbbb_lo:
                 FixupKind = EMBER::fixup_ember_ldi_label_addr_lo;
                 break;
-            case EMBER::LDI_al_hi:
-            case EMBER::LDI_c_hi:
-            case EMBER::LDI_eq_hi:
-            case EMBER::LDI_ge_hi:
-            case EMBER::LDI_nc_hi:
-            case EMBER::LDI_ne_hi:
-            case EMBER::LDI_ng_hi:
-            case EMBER::LDI_v_hi:
+            case EMBER::LDI_w_hi:
+            case EMBER::LDI_h_hi:
+            case EMBER::LDI_b_hi:
+            case EMBER::LDI_sh_hi:
+            case EMBER::LDI_sb_hi:
+            case EMBER::LDI_hh_hi:
+            case EMBER::LDI_bb_hi:
+            case EMBER::LDI_bbbb_hi:
                 FixupKind = EMBER::fixup_ember_ldi_label_addr_hi;
                 break;
             default:

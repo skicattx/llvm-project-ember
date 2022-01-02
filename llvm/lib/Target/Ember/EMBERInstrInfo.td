@@ -15,12 +15,6 @@
 /*
 */
 
-//===----------------------------------------------------------------------===//
-
-//class EMBERPat<dag pattern, dag result> : Pat<pattern, result>, PredicateControl;
-
-//class EMBERInstAlias<string Asm, dag Result, bit Emit = 0b1> :
-//  InstAlias<Asm, Result, Emit>, PredicateControl;
 
 class IsCommutable {
   bit isCommutable = 1;
@@ -69,22 +63,57 @@ include "EMBERInstrFormats.td"
 // EMBER Operand, Complex Patterns and Transformations Definitions.
 //===----------------------------------------------------------------------===//
 
-// ALU OpCodes
-defm ADD : EMBERInstr_rd_ra_rb_imm14<0x0A, "add", [], NoItinerary>;
-defm AND : EMBERInstr_rd_ra_rb_imm14<0x11, "and", [], NoItinerary>;
-defm ASR : EMBERInstr_rd_ra_rb_imm14<0x16, "asr", [], NoItinerary>;
-defm DIV : EMBERInstr_rd_ra_rb_imm14<0x0F, "div", [], NoItinerary>;
-defm LSL : EMBERInstr_rd_ra_rb_imm14<0x15, "lsl", [], NoItinerary>;
-defm LSR : EMBERInstr_rd_ra_rb_imm14<0x14, "lsr", [], NoItinerary>;
-defm MUL : EMBERInstr_rd_ra_rb_imm14<0x0C, "mul", [], NoItinerary>;
-defm OR  : EMBERInstr_rd_ra_rb_imm14<0x12, "or",  [], NoItinerary>;
-defm SUB : EMBERInstr_rd_ra_rb_imm14<0x0B, "sub", [], NoItinerary>;
-defm XOR : EMBERInstr_rd_ra_rb_imm14<0x13, "xor", [], NoItinerary>;
+// Special/System OpCodes
+// defm HALT : EMBERInstr_<0x00, "halt", [], NoItinerary>;
+// defm NOP  : EMBERInstr_<0x01, "nop", [], NoItinerary>;
+// defm INT  : EMBERInstr_<0x02, "int", [], NoItinerary>;
+// defm RTI  : EMBERInstr_<0x03, "rti", [], NoItinerary>;
 
 // Branch OpCodes
-defm BRA : EMBERInstr_bra_cond<0x04, "bra", [], NoItinerary>;
-defm BRL : EMBERInstr_bra_cond<0x05, "brl", [], NoItinerary>;
+defm BRA  : EMBERInstr_bra_cond<0x06, "bra", [], NoItinerary>;
+defm BRL  : EMBERInstr_bra_cond<0x07, "brl", [], NoItinerary>;
+// defm RET  : EMBERInstr_<0x00, "ret",  [], NoItinerary>; // Virtual [ld pc, (sp)++] Bad idea? maybe just dont support this...ld can't access pc by default... 
+// defm RTL  : EMBERInstr_<0x00, "rtl",  [], NoItinerary>; // Virtual [mov pc, lr]
+// defm PUSH : EMBERInstr_<0x00, "push", [], NoItinerary>; // Virtual [st --(sp), rA]
+// defm POP  : EMBERInstr_<0x00, "pop",  [], NoItinerary>; // Virtual [ld rD, (sp)++]
+
+// Move OpCode
+// defm MOV : EMBERInstr_<0x0A, "mov", [], NoItinerary>;
 
 // LDI OpCode (+LDIS, LDIH)
-defm LDI : EMBERInstr_ldi_cond<0x19, [], NoItinerary>;
+defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;
+
+// Load/Store Memory OpCodes
+// defm ST : EMBERInstr_<0x0E, "ld", [], NoItinerary>;
+// defm LD : EMBERInstr_<0x0F, "st", [], NoItinerary>;
+
+// ALU OpCodes
+defm ADD  : EMBERInstr_rd_ra_rb_imm14<0x10, "add", [], NoItinerary>;
+defm SUB  : EMBERInstr_rd_ra_rb_imm14<0x11, "sub", [], NoItinerary>;
+defm MUL  : EMBERInstr_rd_ra_rb_imm14<0x12, "mul", [], NoItinerary>;
+//defm MHS  : EMBERInstr_rd_ra_rb_imm14<0x13, "mhs", [], NoItinerary>;
+//defm MHU  : EMBERInstr_rd_ra_rb_imm14<0x14, "mhu", [], NoItinerary>;
+defm DIV  : EMBERInstr_rd_ra_rb_imm14<0x15, "div", [], NoItinerary>;
+//defm DIVU : EMBERInstr_rd_ra_rb_imm14<0x16, "divu", [], NoItinerary>;
+//defm REM  : EMBERInstr_rd_ra_rb_imm14<0x17, "rem", [], NoItinerary>;   //?
+//defm REMU : EMBERInstr_rd_ra_rb_imm14<0x18, "remu", [], NoItinerary>; //?
+
+defm AND  : EMBERInstr_rd_ra_rb_imm14<0x19, "and", [], NoItinerary>;
+defm OR   : EMBERInstr_rd_ra_rb_imm14<0x1A, "or",  [], NoItinerary>;
+defm XOR  : EMBERInstr_rd_ra_rb_imm14<0x1B, "xor", [], NoItinerary>;
+defm LSR  : EMBERInstr_rd_ra_rb_imm14<0x1C, "lsr", [], NoItinerary>;
+defm LSL  : EMBERInstr_rd_ra_rb_imm14<0x1D, "lsl", [], NoItinerary>;
+defm ASR  : EMBERInstr_rd_ra_rb_imm14<0x1E, "asr", [], NoItinerary>;
+//defm CMP  : EMBERInstr_ra_rb_imm14<0x11, "sub", [], NoItinerary>; // Virtual [SUB r0, rA, rB/[Imm15]]
+//defm TST  : EMBERInstr_ra_rb_imm14<0x19, "and", [], NoItinerary>; // Virtual [AND r0, rA, rB/[Imm15]]
+
+
+
+// TODO: FPU
+// FADD  = 0x30
+// FSUB  = 0x31
+// FMUL  = 0x32
+// FDIV  = 0x33
+
+
 

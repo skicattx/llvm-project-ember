@@ -57,9 +57,9 @@ RelExpr EMBER::getRelExpr(RelType type, const Symbol &s, const uint8_t *loc) con
         case R_EMBER_NONE:
             return R_NONE;
         case R_EMBER_32:
-            return R_ABS; // Need custom? // For now this is "unknown" 32-bit relocation (will be saved in ELF) probably debug/dwarf related?
+            return R_ABS; // Assume this wants an address?
         case R_EMBER_32_PCREL:
-            return R_PC;  // Need custom? // For now this is "unknown" 32-bit (PC-rel) relocation (will be saved in ELF) probably debug/dwarf related?
+            return R_PC;  // Assume this wants an offset?
         case R_EMBER_BRANCH:
             return R_PC; // Need custom?
         case R_EMBER_LDI_LABEL_ADDR_LO:
@@ -77,7 +77,8 @@ void EMBER::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
 {
     switch (rel.type) 
     {
-        case R_EMBER_32: // For now this is "unknown" 32-bit relocation (will be saved in ELF) probably debug/dwarf related?
+        case R_EMBER_32: // For now, jmust save out the 'val', this is mostly 0, but a few are .org, so probably DWARF fixups?
+            write32le(loc, val);
             break;
         case R_EMBER_32_PCREL: // For now this is "unknown" 32-bit (PC-rel) relocation (will be saved in ELF) probably debug/dwarf related?
             break;

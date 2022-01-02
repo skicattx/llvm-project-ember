@@ -35,7 +35,6 @@
 #include "llvm/MC/MCValue.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/MathExtras.h"
-//#include "llvm/Support/EMBERAttributes.h"
 #include "llvm/Support/TargetRegistry.h"
 
 #include <limits>
@@ -55,9 +54,9 @@ struct ParserOptionsSet
 
 class EMBERAsmParser : public MCTargetAsmParser
 {
-  SmallVector<FeatureBitset, 4> FeatureBitStack;
-
-  SmallVector<ParserOptionsSet, 4> ParserOptionsStack;
+//   SmallVector<FeatureBitset, 4> FeatureBitStack;
+// 
+//   SmallVector<ParserOptionsSet, 4> ParserOptionsStack;
   ParserOptionsSet ParserOptions;
 
   SMLoc getLoc() const { return getParser().getTok().getLoc(); }
@@ -254,8 +253,8 @@ public:
 //                 "target-abi)\n";
 //     }
 
-        const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
-        ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
+//        const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
+//         ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
     }
 };
 
@@ -1944,142 +1943,6 @@ void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst)
     S.emitInstruction(Inst, getSTI());
 }
 
-/*
-void EMBERAsmParser::emitLoadImm(MCRegister DestReg, int64_t Value,
-                                 MCStreamer &Out) {
-  EMBERMatInt::InstSeq Seq = EMBERMatInt::generateInstSeq(Value, isRV64());
-
-  MCRegister SrcReg = EMBER::X0;
-  for (EMBERMatInt::Inst &Inst : Seq) {
-    if (Inst.Opc == EMBER::LUI) {
-      emitToStreamer(
-          Out, MCInstBuilder(EMBER::LUI).addReg(DestReg).addImm(Inst.Imm));
-    } else {
-      emitToStreamer(
-          Out, MCInstBuilder(Inst.Opc).addReg(DestReg).addReg(SrcReg).addImm(
-                   Inst.Imm));
-    }
-
-    // Only the first instruction has X0 as its source.
-    SrcReg = DestReg;
-  }
-}
-
-void EMBERAsmParser::emitAuipcInstPair(MCOperand DestReg, MCOperand TmpReg,
-                                       const MCExpr *Symbol,
-                                       EMBERMCExpr::VariantKind VKHi,
-                                       unsigned SecondOpcode, SMLoc IDLoc,
-                                       MCStreamer &Out) {
-  // A pair of instructions for PC-relative addressing; expands to
-  //   TmpLabel: AUIPC TmpReg, VKHi(symbol)
-  //             OP DestReg, TmpReg, %pcrel_lo(TmpLabel)
-  MCContext &Ctx = getContext();
-
-  MCSymbol *TmpLabel = Ctx.createNamedTempSymbol("pcrel_hi");
-  Out.emitLabel(TmpLabel);
-
-  const EMBERMCExpr *SymbolHi = EMBERMCExpr::create(Symbol, VKHi, Ctx);
-  emitToStreamer(
-      Out, MCInstBuilder(EMBER::AUIPC).addOperand(TmpReg).addExpr(SymbolHi));
-
-  const MCExpr *RefToLinkTmpLabel =
-      EMBERMCExpr::create(MCSymbolRefExpr::create(TmpLabel, Ctx),
-                          EMBERMCExpr::VK_EMBER_PCREL_LO, Ctx);
-
-  emitToStreamer(Out, MCInstBuilder(SecondOpcode)
-                          .addOperand(DestReg)
-                          .addOperand(TmpReg)
-                          .addExpr(RefToLinkTmpLabel));
-}
-
-void EMBERAsmParser::emitLoadLocalAddress(MCInst &Inst, SMLoc IDLoc,
-                                          MCStreamer &Out) {
-  // The load local address pseudo-instruction "lla" is used in PC-relative
-  // addressing of local symbols:
-  //   lla rdest, symbol
-  // expands to
-  //   TmpLabel: AUIPC rdest, %pcrel_hi(symbol)
-  //             ADDI rdest, rdest, %pcrel_lo(TmpLabel)
-  MCOperand DestReg = Inst.getOperand(0);
-  const MCExpr *Symbol = Inst.getOperand(1).getExpr();
-  emitAuipcInstPair(DestReg, DestReg, Symbol, EMBERMCExpr::VK_EMBER_PCREL_HI,
-                    EMBER::ADDI, IDLoc, Out);
-}
-
-void EMBERAsmParser::emitLoadAddress(MCInst &Inst, SMLoc IDLoc,
-                                     MCStreamer &Out) {
-  // The load address pseudo-instruction "la" is used in PC-relative and
-  // GOT-indirect addressing of global symbols:
-  //   la rdest, symbol
-  // expands to either (for non-PIC)
-  //   TmpLabel: AUIPC rdest, %pcrel_hi(symbol)
-  //             ADDI rdest, rdest, %pcrel_lo(TmpLabel)
-  // or (for PIC)
-  //   TmpLabel: AUIPC rdest, %got_pcrel_hi(symbol)
-  //             Lx rdest, %pcrel_lo(TmpLabel)(rdest)
-  MCOperand DestReg = Inst.getOperand(0);
-  const MCExpr *Symbol = Inst.getOperand(1).getExpr();
-  unsigned SecondOpcode;
-  EMBERMCExpr::VariantKind VKHi;
-  if (ParserOptions.IsPicEnabled) {
-    SecondOpcode = isRV64() ? EMBER::LD : EMBER::LW;
-    VKHi = EMBERMCExpr::VK_EMBER_GOT_HI;
-  } else {
-    SecondOpcode = EMBER::ADDI;
-    VKHi = EMBERMCExpr::VK_EMBER_PCREL_HI;
-  }
-  emitAuipcInstPair(DestReg, DestReg, Symbol, VKHi, SecondOpcode, IDLoc, Out);
-}
-
-void EMBERAsmParser::emitLoadTLSIEAddress(MCInst &Inst, SMLoc IDLoc,
-                                          MCStreamer &Out) {
-  // The load TLS IE address pseudo-instruction "la.tls.ie" is used in
-  // initial-exec TLS model addressing of global symbols:
-  //   la.tls.ie rdest, symbol
-  // expands to
-  //   TmpLabel: AUIPC rdest, %tls_ie_pcrel_hi(symbol)
-  //             Lx rdest, %pcrel_lo(TmpLabel)(rdest)
-  MCOperand DestReg = Inst.getOperand(0);
-  const MCExpr *Symbol = Inst.getOperand(1).getExpr();
-  unsigned SecondOpcode = isRV64() ? EMBER::LD : EMBER::LW;
-  emitAuipcInstPair(DestReg, DestReg, Symbol, EMBERMCExpr::VK_EMBER_TLS_GOT_HI,
-                    SecondOpcode, IDLoc, Out);
-}
-
-void EMBERAsmParser::emitLoadTLSGDAddress(MCInst &Inst, SMLoc IDLoc,
-                                          MCStreamer &Out) {
-  // The load TLS GD address pseudo-instruction "la.tls.gd" is used in
-  // global-dynamic TLS model addressing of global symbols:
-  //   la.tls.gd rdest, symbol
-  // expands to
-  //   TmpLabel: AUIPC rdest, %tls_gd_pcrel_hi(symbol)
-  //             ADDI rdest, rdest, %pcrel_lo(TmpLabel)
-  MCOperand DestReg = Inst.getOperand(0);
-  const MCExpr *Symbol = Inst.getOperand(1).getExpr();
-  emitAuipcInstPair(DestReg, DestReg, Symbol, EMBERMCExpr::VK_EMBER_TLS_GD_HI,
-                    EMBER::ADDI, IDLoc, Out);
-}
-
-void EMBERAsmParser::emitLoadStoreSymbol(MCInst &Inst, unsigned Opcode,
-                                         SMLoc IDLoc, MCStreamer &Out,
-                                         bool HasTmpReg) {
-  // The load/store pseudo-instruction does a pc-relative load with
-  // a symbol.
-  //
-  // The expansion looks like this
-  //
-  //   TmpLabel: AUIPC tmp, %pcrel_hi(symbol)
-  //             [S|L]X    rd, %pcrel_lo(TmpLabel)(tmp)
-  MCOperand DestReg = Inst.getOperand(0);
-  unsigned SymbolOpIdx = HasTmpReg ? 2 : 1;
-  unsigned TmpRegOpIdx = HasTmpReg ? 1 : 0;
-  MCOperand TmpReg = Inst.getOperand(TmpRegOpIdx);
-  const MCExpr *Symbol = Inst.getOperand(SymbolOpIdx).getExpr();
-  emitAuipcInstPair(DestReg, TmpReg, Symbol, EMBERMCExpr::VK_EMBER_PCREL_HI,
-                    Opcode, IDLoc, Out);
-}
-*/
-
 void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
 {
     // If Imm fits in 16 bits, emit:
@@ -2104,22 +1967,22 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
     unsigned LDIHOpcode = 0;
     switch (Inst.getOpcode())
     {
-    case EMBER::LDI_al_lo:
-        LDIHOpcode = EMBER::LDI_al_hi; break;
-    case EMBER::LDI_c_lo:
-        LDIHOpcode = EMBER::LDI_c_hi; break;
-    case EMBER::LDI_eq_lo:
-        LDIHOpcode = EMBER::LDI_eq_hi; break;
-    case EMBER::LDI_ge_lo:
-        LDIHOpcode = EMBER::LDI_ge_hi; break;
-    case EMBER::LDI_nc_lo:
-        LDIHOpcode = EMBER::LDI_nc_hi; break;
-    case EMBER::LDI_ne_lo:
-        LDIHOpcode = EMBER::LDI_ne_hi; break;
-    case EMBER::LDI_ng_lo:
-        LDIHOpcode = EMBER::LDI_ng_hi; break;
-    case EMBER::LDI_v_lo:
-        LDIHOpcode = EMBER::LDI_v_hi; break;
+    case EMBER::LDI_w_lo:
+        LDIHOpcode = EMBER::LDI_w_hi; break;
+    case EMBER::LDI_h_lo:
+        LDIHOpcode = EMBER::LDI_h_hi; break;
+    case EMBER::LDI_b_lo:
+        LDIHOpcode = EMBER::LDI_b_hi; break;
+    case EMBER::LDI_sh_lo:
+        LDIHOpcode = EMBER::LDI_sh_hi; break;
+    case EMBER::LDI_sb_lo:
+        LDIHOpcode = EMBER::LDI_sb_hi; break;
+    case EMBER::LDI_hh_lo:
+        LDIHOpcode = EMBER::LDI_hh_hi; break;
+    case EMBER::LDI_bb_lo:
+        LDIHOpcode = EMBER::LDI_bb_hi; break;
+    case EMBER::LDI_bbbb_lo:
+        LDIHOpcode = EMBER::LDI_bbbb_hi; break;
     }
 
     emitToStreamer(Out, Inst);
@@ -2129,196 +1992,9 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
         .addOperand(SourceImm));
 }
 
-/*
-void EMBERAsmParser::emitPseudoExtend(MCInst &Inst, bool SignExtend,
-                                      int64_t Width, SMLoc IDLoc,
-                                      MCStreamer &Out) {
-  // The sign/zero extend pseudo-instruction does two shifts, with the shift
-  // amounts dependent on the XLEN.
-  //
-  // The expansion looks like this
-  //
-  //    SLLI rd, rs, XLEN - Width
-  //    SR[A|R]I rd, rd, XLEN - Width
-  MCOperand DestReg = Inst.getOperand(0);
-  MCOperand SourceReg = Inst.getOperand(1);
 
-  unsigned SecondOpcode = SignExtend ? EMBER::SRAI : EMBER::SRLI;
-  int64_t ShAmt = (isRV64() ? 64 : 32) - Width;
-
-  assert(ShAmt > 0 && "Shift amount must be non-zero.");
-
-  emitToStreamer(Out, MCInstBuilder(EMBER::SLLI)
-                          .addOperand(DestReg)
-                          .addOperand(SourceReg)
-                          .addImm(ShAmt));
-
-  emitToStreamer(Out, MCInstBuilder(SecondOpcode)
-                          .addOperand(DestReg)
-                          .addOperand(DestReg)
-                          .addImm(ShAmt));
-}
-
-void EMBERAsmParser::emitVMSGE(MCInst &Inst, unsigned Opcode, SMLoc IDLoc,
-                               MCStreamer &Out) {
-  if (Inst.getNumOperands() == 3) {
-    // unmasked va >= x
-    //
-    //  pseudoinstruction: vmsge{u}.vx vd, va, x
-    //  expansion: vmslt{u}.vx vd, va, x; vmnand.mm vd, vd, vd
-    emitToStreamer(Out, MCInstBuilder(Opcode)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(1))
-                            .addOperand(Inst.getOperand(2))
-                            .addReg(EMBER::NoRegister));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMNAND_MM)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(0)));
-  } else if (Inst.getNumOperands() == 4) {
-    // masked va >= x, vd != v0
-    //
-    //  pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t
-    //  expansion: vmslt{u}.vx vd, va, x, v0.t; vmxor.mm vd, vd, v0
-    assert(Inst.getOperand(0).getReg() != EMBER::V0 &&
-           "The destination register should not be V0.");
-    emitToStreamer(Out, MCInstBuilder(Opcode)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(1))
-                            .addOperand(Inst.getOperand(2))
-                            .addOperand(Inst.getOperand(3)));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMXOR_MM)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(0))
-                            .addReg(EMBER::V0));
-  } else if (Inst.getNumOperands() == 5 &&
-             Inst.getOperand(0).getReg() == EMBER::V0) {
-    // masked va >= x, vd == v0
-    //
-    //  pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t, vt
-    //  expansion: vmslt{u}.vx vt, va, x;  vmandnot.mm vd, vd, vt
-    assert(Inst.getOperand(0).getReg() == EMBER::V0 &&
-           "The destination register should be V0.");
-    assert(Inst.getOperand(1).getReg() != EMBER::V0 &&
-           "The temporary vector register should not be V0.");
-    emitToStreamer(Out, MCInstBuilder(Opcode)
-                            .addOperand(Inst.getOperand(1))
-                            .addOperand(Inst.getOperand(2))
-                            .addOperand(Inst.getOperand(3))
-                            .addOperand(Inst.getOperand(4)));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMANDNOT_MM)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(1)));
-  } else if (Inst.getNumOperands() == 5) {
-    // masked va >= x, any vd
-    //
-    // pseudoinstruction: vmsge{u}.vx vd, va, x, v0.t, vt
-    // expansion: vmslt{u}.vx vt, va, x; vmandnot.mm vt, v0, vt; vmandnot.mm vd,
-    // vd, v0; vmor.mm vd, vt, vd
-    assert(Inst.getOperand(1).getReg() != EMBER::V0 &&
-           "The temporary vector register should not be V0.");
-    emitToStreamer(Out, MCInstBuilder(Opcode)
-                            .addOperand(Inst.getOperand(1))
-                            .addOperand(Inst.getOperand(2))
-                            .addOperand(Inst.getOperand(3))
-                            .addReg(EMBER::NoRegister));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMANDNOT_MM)
-                            .addOperand(Inst.getOperand(1))
-                            .addReg(EMBER::V0)
-                            .addOperand(Inst.getOperand(1)));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMANDNOT_MM)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(0))
-                            .addReg(EMBER::V0));
-    emitToStreamer(Out, MCInstBuilder(EMBER::VMOR_MM)
-                            .addOperand(Inst.getOperand(0))
-                            .addOperand(Inst.getOperand(1))
-                            .addOperand(Inst.getOperand(0)));
-  }
-}
-
-bool EMBERAsmParser::checkPseudoAddTPRel(MCInst &Inst,
-                                         OperandVector &Operands) {
-  assert(Inst.getOpcode() == EMBER::PseudoAddTPRel && "Invalid instruction");
-  assert(Inst.getOperand(2).isReg(); "Unexpected second operand kind");
-  if (Inst.getOperand(2).getReg() != EMBER::X4) {
-    SMLoc ErrorLoc = ((EMBEROperand &)*Operands[3]).getStartLoc();
-    return Error(ErrorLoc, "the second input operand must be tp/x4 when using "
-                           "%tprel_add modifier");
-  }
-
-  return false;
-}
-
-std::unique_ptr<EMBEROperand> EMBERAsmParser::defaultMaskRegOp() const {
-  return EMBEROperand::createReg(EMBER::NoRegister, llvm::SMLoc(),
-                                 llvm::SMLoc(), isRV64());
-}
-*/
 bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands) 
 {
-//   if (Inst.getOpcode() == EMBER::PseudoVMSGEU_VX_M_T || Inst.getOpcode() == EMBER::PseudoVMSGE_VX_M_T) 
-//   {
-//     unsigned DestReg = Inst.getOperand(0).getReg();
-//     unsigned TempReg = Inst.getOperand(1).getReg();
-//     if (DestReg == TempReg) {
-//       SMLoc Loc = Operands.back()->getStartLoc();
-//       return Error(Loc, "The temporary vector register cannot be the same as "
-//                         "the destination register.");
-//     }
-//   }
-
-//   const MCInstrDesc &MCID = MII.get(Inst.getOpcode());
-//   unsigned Constraints =
-//       (MCID.TSFlags & EMBERII::ConstraintMask) >> EMBERII::ConstraintShift;
-//   if (Constraints == EMBERII::NoConstraint)
-//     return false;
-
-//   unsigned DestReg = Inst.getOperand(0).getReg();
-//   // Operands[1] will be the first operand, DestReg.
-//   SMLoc Loc = Operands[1]->getStartLoc();
-//   if (Constraints & EMBERII::VS2Constraint) {
-//     unsigned CheckReg = Inst.getOperand(1).getReg();
-//     if (DestReg == CheckReg)
-//       return Error(Loc, "The destination vector register group cannot overlap"
-//                         " the source vector register group.");
-//   }
-//   if ((Constraints & EMBERII::VS1Constraint); (Inst.getOperand(2).isReg())) {
-//     unsigned CheckReg = Inst.getOperand(2).getReg();
-//     if (DestReg == CheckReg)
-//       return Error(Loc, "The destination vector register group cannot overlap"
-//                         " the source vector register group.");
-//   }
-//   if ((Constraints & EMBERII::VMConstraint); (DestReg == EMBER::V0)) {
-//     // vadc, vsbc are special cases. These instructions have no mask register.
-//     // The destination register could not be V0.
-//     unsigned Opcode = Inst.getOpcode();
-//     if (Opcode == EMBER::VADC_VVM || Opcode == EMBER::VADC_VXM ||
-//         Opcode == EMBER::VADC_VIM || Opcode == EMBER::VSBC_VVM ||
-//         Opcode == EMBER::VSBC_VXM || Opcode == EMBER::VFMERGE_VFM ||
-//         Opcode == EMBER::VMERGE_VIM || Opcode == EMBER::VMERGE_VVM ||
-//         Opcode == EMBER::VMERGE_VXM)
-//       return Error(Loc, "The destination vector register group cannot be V0.");
-// 
-//     // Regardless masked or unmasked version, the number of operands is the
-//     // same. For example, "viota.m v0, v2" is "viota.m v0, v2, NoRegister"
-//     // actually. We need to check the last operand to ensure whether it is
-//     // masked or not.
-//     unsigned CheckReg = Inst.getOperand(Inst.getNumOperands() - 1).getReg();
-//     assert((CheckReg == EMBER::V0 || CheckReg == EMBER::NoRegister);
-//            "Unexpected register for mask operand");
-// 
-//     if (DestReg == CheckReg)
-//       return Error(Loc, "The destination vector register group cannot overlap"
-//                         " the mask register.");
-//   }
-
-
-
-
-
-
   return false;
 }
 
@@ -2331,189 +2007,21 @@ bool EMBERAsmParser::processInstruction(MCInst         &Inst,
 
     switch (Inst.getOpcode())
     {
+        // TODO: Check based on the type, if the imm value will fit, if we need to gen an LDIH, or if an error
     default:
         break;
         // For LDI opcode, determine if immediate value fits in 16 bits, or add an additional LDIH
-    case EMBER::LDI_al_lo:
-    case EMBER::LDI_c_lo:
-    case EMBER::LDI_eq_lo:
-    case EMBER::LDI_ge_lo:
-    case EMBER::LDI_nc_lo:
-    case EMBER::LDI_ne_lo:
-    case EMBER::LDI_ng_lo:
-    case EMBER::LDI_v_lo:
+    case EMBER::LDI_w_lo:
+    case EMBER::LDI_h_lo:
+    case EMBER::LDI_b_lo:
+    case EMBER::LDI_sh_lo:
+    case EMBER::LDI_sb_lo:
+    case EMBER::LDI_hh_lo:
+    case EMBER::LDI_bb_lo:
+    case EMBER::LDI_bbbb_lo:
         emitLDIImm(Inst, IDLoc, Out);
         return false;
     }
-
-
-
-
-
-    // Emit pseudo and opcodes that can't be built in the tb code
-/*
-    switch (Inst.getOpcode()) 
-    {
-        default:
-            break;
-        case EMBER::PseudoLI: 
-        {
-            MCRegister Reg = Inst.getOperand(0).getReg();
-            const MCOperand &Op1 = Inst.getOperand(1);
-            if (Op1.isExpr()) 
-            {
-              // We must have li reg, %lo(sym) or li reg, %pcrel_lo(sym) or similar.
-              // Just convert to an addi. This allows compatibility with gas.
-              emitToStreamer(Out, MCInstBuilder(EMBER::ADDI)
-                                      .addReg(Reg)
-                                      .addReg(EMBER::X0)
-                                      .addExpr(Op1.getExpr()));
-              return false;
-            }
-            int64_t Imm = Inst.getOperand(1).getImm();
-            // On RV32 the immediate here can either be a signed or an unsigned
-            // 32-bit number. Sign extension has to be performed to ensure that Imm
-            // represents the expected signed 64-bit number.
-            if (!isRV64())
-              Imm = SignExtend64<32>(Imm);
-            emitLoadImm(Reg, Imm, Out);
-            return false;
-        }
-        case EMBER::PseudoLLA:
-            emitLoadLocalAddress(Inst, IDLoc, Out);
-            return false;
-        case EMBER::PseudoLA:
-            emitLoadAddress(Inst, IDLoc, Out);
-            return false;
-        case EMBER::PseudoLA_TLS_IE:
-        emitLoadTLSIEAddress(Inst, IDLoc, Out);
-        return false;
-        case EMBER::PseudoLA_TLS_GD:
-        emitLoadTLSGDAddress(Inst, IDLoc, Out);
-        return false;
-        case EMBER::PseudoLB:
-        emitLoadStoreSymbol(Inst, EMBER::LB, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLBU:
-        emitLoadStoreSymbol(Inst, EMBER::LBU, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLH:
-        emitLoadStoreSymbol(Inst, EMBER::LH, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLHU:
-        emitLoadStoreSymbol(Inst, EMBER::LHU, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLW:
-        emitLoadStoreSymbol(Inst, EMBER::LW, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLWU:
-        emitLoadStoreSymbol(Inst, EMBER::LWU, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoLD:
-        emitLoadStoreSymbol(Inst, EMBER::LD, IDLoc, Out, false);
-        return false;
-        case EMBER::PseudoFLH:
-        emitLoadStoreSymbol(Inst, EMBER::FLH, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoFLW:
-        emitLoadStoreSymbol(Inst, EMBER::FLW, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoFLD:
-        emitLoadStoreSymbol(Inst, EMBER::FLD, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoSB:
-        emitLoadStoreSymbol(Inst, EMBER::SB, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoSH:
-        emitLoadStoreSymbol(Inst, EMBER::SH, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoSW:
-        emitLoadStoreSymbol(Inst, EMBER::SW, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoSD:
-        emitLoadStoreSymbol(Inst, EMBER::SD, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoFSH:
-        emitLoadStoreSymbol(Inst, EMBER::FSH, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoFSW:
-        emitLoadStoreSymbol(Inst, EMBER::FSW, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoFSD:
-        emitLoadStoreSymbol(Inst, EMBER::FSD, IDLoc, Out, true);
-        return false;
-        case EMBER::PseudoAddTPRel:
-        if (checkPseudoAddTPRel(Inst, Operands))
-            return true;
-        break;
-        case EMBER::PseudoSEXT_B:
-        emitPseudoExtend(Inst, true, 8, IDLoc, Out);
-        return false;
-        case EMBER::PseudoSEXT_H:
-        emitPseudoExtend(Inst, true, 16, IDLoc, Out);
-        return false;
-        case EMBER::PseudoZEXT_H:
-        emitPseudoExtend(Inst, false, 16, IDLoc, Out);
-        return false;
-        case EMBER::PseudoZEXT_W:
-        emitPseudoExtend(Inst, false, 32, IDLoc, Out);
-        return false;
-        case EMBER::PseudoVMSGEU_VX:
-        case EMBER::PseudoVMSGEU_VX_M:
-        case EMBER::PseudoVMSGEU_VX_M_T:
-        emitVMSGE(Inst, EMBER::VMSLTU_VX, IDLoc, Out);
-        return false;
-        case EMBER::PseudoVMSGE_VX:
-        case EMBER::PseudoVMSGE_VX_M:
-        case EMBER::PseudoVMSGE_VX_M_T:
-        emitVMSGE(Inst, EMBER::VMSLT_VX, IDLoc, Out);
-        return false;
-        case EMBER::PseudoVMSGE_VI:
-        case EMBER::PseudoVMSLT_VI: {
-        // These instructions are signed and so is immediate so we can subtract one
-        // and change the opcode.
-        int64_t Imm = Inst.getOperand(2).getImm();
-        unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGE_VI ? EMBER::VMSGT_VI
-                                                                    : EMBER::VMSLE_VI;
-        emitToStreamer(Out, MCInstBuilder(Opc)
-                                .addOperand(Inst.getOperand(0))
-                                .addOperand(Inst.getOperand(1))
-                                .addImm(Imm - 1)
-                                .addOperand(Inst.getOperand(3)));
-        return false;
-        }
-        case EMBER::PseudoVMSGEU_VI:
-        case EMBER::PseudoVMSLTU_VI: {
-        int64_t Imm = Inst.getOperand(2).getImm();
-        // Unsigned comparisons are tricky because the immediate is signed. If the
-        // immediate is 0 we can't just subtract one. vmsltu.vi v0, v1, 0 is always
-        // false, but vmsle.vi v0, v1, -1 is always true. Instead we use
-        // vmsne v0, v1, v1 which is always false.
-        if (Imm == 0) {
-            unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
-                                ? EMBER::VMSEQ_VV
-                                : EMBER::VMSNE_VV;
-            emitToStreamer(Out, MCInstBuilder(Opc)
-                                    .addOperand(Inst.getOperand(0))
-                                    .addOperand(Inst.getOperand(1))
-                                    .addOperand(Inst.getOperand(1))
-                                    .addOperand(Inst.getOperand(3)));
-        } else {
-            // Other immediate values can subtract one like signed.
-            unsigned Opc = Inst.getOpcode() == EMBER::PseudoVMSGEU_VI
-                                ? EMBER::VMSGTU_VI
-                                : EMBER::VMSLEU_VI;
-            emitToStreamer(Out, MCInstBuilder(Opc)
-                                    .addOperand(Inst.getOperand(0))
-                                    .addOperand(Inst.getOperand(1))
-                                    .addImm(Imm - 1)
-                                    .addOperand(Inst.getOperand(3)));
-        }
-
-        return false;
-        }
-  }
-*/
 
     emitToStreamer(Out, Inst);
     return false;
