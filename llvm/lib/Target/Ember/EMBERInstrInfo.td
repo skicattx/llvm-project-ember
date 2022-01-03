@@ -1,21 +1,10 @@
-//===- EMBERInstrInfo.td - Target Description for EMBER Target -*- tablegen -*-=//
+//======================================================================================================================
 //
-// Copyright (c) 2021 IARI Ventures, LLC. All rights reserved.
+// Copyright (c) 2022 IARI Ventures, LLC. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
-//
-// This file contains the EMBER implementation of the TargetInstrInfo class.
-//
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
-
-//===----------------------------------------------------------------------===//
-// EMBER profiles and nodes
-//===----------------------------------------------------------------------===//
 /*
-*/
-
-
 class IsCommutable {
   bit isCommutable = 1;
 }
@@ -52,22 +41,23 @@ class IsAsCheapAsAMove {
 class NeverHasSideEffects {
   bit hasSideEffects = 0;
 }
+*/
 
-//===----------------------------------------------------------------------===//
-// Instruction format superclass
-//===----------------------------------------------------------------------===//
-
+//======================================================================================================================
+// Instruction Description Header
+//======================================================================================================================
 include "EMBERInstrFormats.td"
 
-//===----------------------------------------------------------------------===//
-// EMBER Operand, Complex Patterns and Transformations Definitions.
-//===----------------------------------------------------------------------===//
+
+//======================================================================================================================
+// EMBER Operation Definitions.
+//======================================================================================================================
 
 // Special/System OpCodes
-// defm HALT : EMBERInstr_<0x00, "halt", [], NoItinerary>;
-// defm NOP  : EMBERInstr_<0x01, "nop", [], NoItinerary>;
-// defm INT  : EMBERInstr_<0x02, "int", [], NoItinerary>;
-// defm RTI  : EMBERInstr_<0x03, "rti", [], NoItinerary>;
+def  HALT : EMBERInstrSys<0x00, "halt", [], NoItinerary>;
+def  NOP  : EMBERInstrSys<0x01, "nop", [], NoItinerary>;
+def  INT  : EMBERInstrSys<0x02, "int", [], NoItinerary>;
+def  RTI  : EMBERInstrSys<0x03, "rti", [], NoItinerary>;
 
 // Branch OpCodes
 defm BRA  : EMBERInstr_bra_cond<0x06, "bra", [], NoItinerary>;
@@ -80,7 +70,7 @@ defm BRL  : EMBERInstr_bra_cond<0x07, "brl", [], NoItinerary>;
 // Move OpCode
 // defm MOV : EMBERInstr_<0x0A, "mov", [], NoItinerary>;
 
-// LDI OpCode (+LDIS, LDIH)
+// LDI OpCode (+LDIH)
 defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;
 
 // Load/Store Memory OpCodes
@@ -104,8 +94,8 @@ defm XOR  : EMBERInstr_rd_ra_rb_imm14<0x1B, "xor", [], NoItinerary>;
 defm LSR  : EMBERInstr_rd_ra_rb_imm14<0x1C, "lsr", [], NoItinerary>;
 defm LSL  : EMBERInstr_rd_ra_rb_imm14<0x1D, "lsl", [], NoItinerary>;
 defm ASR  : EMBERInstr_rd_ra_rb_imm14<0x1E, "asr", [], NoItinerary>;
-//defm CMP  : EMBERInstr_ra_rb_imm14<0x11, "sub", [], NoItinerary>; // Virtual [SUB r0, rA, rB/[Imm15]]
-//defm TST  : EMBERInstr_ra_rb_imm14<0x19, "and", [], NoItinerary>; // Virtual [AND r0, rA, rB/[Imm15]]
+defm CMP  : EMBERInstr_ra_rb_imm14<0x11, "sub", [], NoItinerary>; // Virtual [SUB r0, rA, rB/[Imm15]]
+defm TST  : EMBERInstr_ra_rb_imm14<0x19, "and", [], NoItinerary>; // Virtual [AND r0, rA, rB/[Imm15]]
 
 
 

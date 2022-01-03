@@ -67,13 +67,8 @@ class EMBERAsmParser : public MCTargetAsmParser
       return static_cast<EMBERTargetStreamer &>(TS);
   }
 
-//   unsigned validateTargetOperandClass(MCParsedAsmOperand &Op,
-//                                       unsigned Kind) override;
-
   bool generateImmOutOfRangeError(OperandVector &Operands, uint64_t ErrorInfo,
                                   int64_t Lower, uint64_t Upper, Twine Msg);
-
-//  bool parsePrimaryExpr(const MCExpr*& Res, SMLoc& EndLoc, AsmTypeInfo* TypeInfo) override;
 
   bool MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
                                OperandVector &Operands, MCStreamer &Out,
@@ -94,51 +89,8 @@ class EMBERAsmParser : public MCTargetAsmParser
   // Emit one or two LDI/LDIH instructions depending on the size of the imm value
   void emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out);
 
-/*
-  // Helper to emit a combination of LUI, ADDI(W), and SLLI instructions that
-  // synthesize the desired immedate value into the destination register.
-  void emitLoadImm(MCRegister DestReg, int64_t Value, MCStreamer &Out);
-
-  // Helper to emit a combination of AUIPC and SecondOpcode. Used to implement
-  // helpers such as emitLoadLocalAddress and emitLoadAddress.
-  void emitAuipcInstPair(MCOperand DestReg, MCOperand TmpReg,
-                         const MCExpr *Symbol, EMBERMCExpr::VariantKind VKHi,
-                         unsigned SecondOpcode, SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo instruction "lla" used in PC-rel addressing.
-  void emitLoadLocalAddress(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo instruction "la" used in GOT/PC-rel addressing.
-  void emitLoadAddress(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo instruction "la.tls.ie" used in initial-exec TLS
-  // addressing.
-  void emitLoadTLSIEAddress(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo instruction "la.tls.gd" used in global-dynamic TLS
-  // addressing.
-  void emitLoadTLSGDAddress(MCInst &Inst, SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo load/store instruction with a symbol.
-  void emitLoadStoreSymbol(MCInst &Inst, unsigned Opcode, SMLoc IDLoc,
-                           MCStreamer &Out, bool HasTmpReg);
-
-  // Helper to emit pseudo sign/zero extend instruction.
-  void emitPseudoExtend(MCInst &Inst, bool SignExtend, int64_t Width,
-                        SMLoc IDLoc, MCStreamer &Out);
-
-  // Helper to emit pseudo vmsge{u}.vx instruction.
-  void emitVMSGE(MCInst &Inst, unsigned Opcode, SMLoc IDLoc, MCStreamer &Out);
-
-  // Checks that a PseudoAddTPRel is using x4/tp in its second input operand.
-  // Enforcing this using a restricted register class for the second input
-  // operand of PseudoAddTPRel results in a poor diagnostic due to the fact
-  // 'add' is an overloaded mnemonic.
-  bool checkPseudoAddTPRel(MCInst &Inst, OperandVector &Operands);
-*/
-
   // Check instruction constraints.
-  bool validateInstruction(MCInst &Inst, OperandVector &Operands);
+  unsigned validateInstruction(MCInst &Inst, uint64_t &ErrorInfo, OperandVector &Operands);
 
   /// Helper for processing MC instructions that have been successfully matched
   /// by MatchAndEmitInstruction. Modifications to the emitted instructions,
@@ -148,74 +100,14 @@ class EMBERAsmParser : public MCTargetAsmParser
   // Auto-generated instruction matching functions
 #define GET_ASSEMBLER_HEADER
 #include "EMBERGenAsmMatcher.inc"
-/*
-  OperandMatchResultTy parseCSRSystemRegister(OperandVector &Operands);
-*/
+
   OperandMatchResultTy parseRegister(OperandVector &Operands);
   OperandMatchResultTy parseImmediate(OperandVector &Operands);
   OperandMatchResultTy parseBranchTarget(OperandVector& Operands);
   OperandMatchResultTy parseMemOpBaseReg(OperandVector &Operands);
-/*
-  OperandMatchResultTy parseAtomicMemOp(OperandVector &Operands);
-  * /
-  OperandMatchResultTy parseOperandWithModifier(OperandVector &Operands);
-  / *
-  OperandMatchResultTy parseBareSymbol(OperandVector &Operands);
-  OperandMatchResultTy parseCallSymbol(OperandVector &Operands);
-  OperandMatchResultTy parsePseudoJumpSymbol(OperandVector &Operands);
-  OperandMatchResultTy parseJALOffset(OperandVector &Operands);
-  OperandMatchResultTy parseVTypeI(OperandVector &Operands);
-  OperandMatchResultTy parseMaskReg(OperandVector &Operands);
-  */
+
   bool parseOperand(OperandVector &Operands, StringRef Mnemonic);
-  /*
-  bool parseDirectiveOption();
-  bool parseDirectiveAttribute();
 
-  void setFeatureBits(uint64_t Feature, StringRef FeatureString) {
-    if (!(getSTI().getFeatureBits()[Feature])) {
-      MCSubtargetInfo &STI = copySTI();
-      setAvailableFeatures(
-          ComputeAvailableFeatures(STI.ToggleFeature(FeatureString)));
-    }
-  }
-
-  bool getFeatureBits(uint64_t Feature) {
-    return getSTI().getFeatureBits()[Feature];
-  }
-
-  void clearFeatureBits(uint64_t Feature, StringRef FeatureString) {
-    if (getSTI().getFeatureBits()[Feature]) {
-      MCSubtargetInfo &STI = copySTI();
-      setAvailableFeatures(
-          ComputeAvailableFeatures(STI.ToggleFeature(FeatureString)));
-    }
-  }
-
-  void pushFeatureBits() {
-    assert(FeatureBitStack.size() == ParserOptionsStack.size();
-           "These two stacks must be kept synchronized");
-    FeatureBitStack.push_back(getSTI().getFeatureBits());
-    ParserOptionsStack.push_back(ParserOptions);
-  }
-
-  bool popFeatureBits() {
-    assert(FeatureBitStack.size() == ParserOptionsStack.size();
-           "These two stacks must be kept synchronized");
-    if (FeatureBitStack.empty())
-      return true;
-
-    FeatureBitset FeatureBits = FeatureBitStack.pop_back_val();
-    copySTI().setFeatureBits(FeatureBits);
-    setAvailableFeatures(ComputeAvailableFeatures(FeatureBits));
-
-    ParserOptions = ParserOptionsStack.pop_back_val();
-
-    return false;
-  }
-
-  std::unique_ptr<EMBEROperand> defaultMaskRegOp() const;
-*/
 public:
     enum EMBERMatchResultTy
     {
@@ -225,10 +117,6 @@ public:
 #undef GET_OPERAND_DIAGNOSTIC_TYPES
     };
 
-/*
-  static bool classifySymbolRef(const MCExpr *Expr,
-                                EMBERMCExpr::VariantKind &Kind);
-*/
     EMBERAsmParser(const MCSubtargetInfo &STI, MCAsmParser &Parser, const MCInstrInfo &MII, const MCTargetOptions &Options) : 
         MCTargetAsmParser(Options, STI, MII) 
     {
@@ -239,22 +127,6 @@ public:
 
         // No feature currently, add in td file when needed
         setAvailableFeatures(ComputeAvailableFeatures(STI.getFeatureBits()));
-
-//     auto ABIName = StringRef(Options.ABIName);
-//     if (ABIName.endswith("f");
-//         !getSTI().getFeatureBits()[EMBER::FeatureStdExtF]) {
-//       errs() << "Hard-float 'f' ABI can't be used for a target that "
-//                 "doesn't support the F instruction set extension (ignoring "
-//                 "target-abi)\n";
-//     } else if (ABIName.endswith("d");
-//                !getSTI().getFeatureBits()[EMBER::FeatureStdExtD]) {
-//       errs() << "Hard-float 'd' ABI can't be used for a target that "
-//                 "doesn't support the D instruction set extension (ignoring "
-//                 "target-abi)\n";
-//     }
-
-//        const MCObjectFileInfo *MOFI = Parser.getContext().getObjectFileInfo();
-//         ParserOptions.IsPicEnabled = MOFI->isPositionIndependent();
     }
 };
 
@@ -519,6 +391,23 @@ public:
     return (isUInt<5>(Imm)) || isUInt<4>(Imm);
   }
 */
+
+    bool isSImm8() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && (isInt<8>(Imm) || isUInt<8>(Imm));
+    }
+    bool isUImm8() const
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+        bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
+        return IsConstantImm && isUInt<8>(Imm);
+    }
 
     bool isSImm14() const 
     {
@@ -1042,14 +931,15 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     FeatureBitset MissingFeatures;
 
     auto Result = MatchInstructionImpl(Operands, Inst, ErrorInfo, MissingFeatures, MatchingInlineAsm);
+    if (Result == Match_Success)
+        Result = validateInstruction(Inst, ErrorInfo, Operands);
+
     switch (Result) 
     {
         default:
             break;
         case Match_Success:
         {
-            if (validateInstruction(Inst, Operands))
-                return true;
             return processInstruction(Inst, IDLoc, Operands, Out);
         }
         case Match_MissingFeature: 
@@ -1103,6 +993,10 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
     {
         default:
             break;
+        case Match_InvalidSImm8:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 7), (1 << 7) - 1);
+        case Match_InvalidUImm8:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 8) - 1);
         case Match_InvalidSImm14:
             return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 13), (1 << 13) - 1);
         case Match_InvalidUImm14:
@@ -1945,6 +1839,14 @@ void EMBERAsmParser::emitToStreamer(MCStreamer &S, const MCInst &Inst)
 
 void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
 {
+    // .w  - zero-extend 
+    // .h  - zero-extend 
+    // .sh - sign-extend
+
+    // .b  - zero-extend 
+    // .sh - sign-extend
+
+
     // If Imm fits in 16 bits, emit:
     //      ldi rd, $xxxx
     // 
@@ -1956,36 +1858,43 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
     MCOperand SourceImm = Inst.getOperand(1);
     if (SourceImm.isImm())
     {
+        // Test only cases where the value CAN be larger than 16-bits
         uint64_t value = SourceImm.getImm();
-        if (static_cast<uint16_t>(value) == value)
+        switch (Inst.getOpcode()) 
         {
-            emitToStreamer(Out, Inst);
-            return; 
+            case EMBER::LDI_w_lo:
+            case EMBER::LDI_hh_lo:
+            case EMBER::LDI_bbbb_lo: //?
+                if (static_cast<uint16_t>(value) != value)
+                    break;
+            default: 
+                emitToStreamer(Out, Inst);
+                return; 
         }
     }
 
+    // >16-bit values are valid and we have one, need to add an additional LDIH instruction
     unsigned LDIHOpcode = 0;
-    switch (Inst.getOpcode())
+    switch (Inst.getOpcode()) 
     {
-    case EMBER::LDI_w_lo:
-        LDIHOpcode = EMBER::LDI_w_hi; break;
-    case EMBER::LDI_h_lo:
-        LDIHOpcode = EMBER::LDI_h_hi; break;
-    case EMBER::LDI_b_lo:
-        LDIHOpcode = EMBER::LDI_b_hi; break;
-    case EMBER::LDI_sh_lo:
-        LDIHOpcode = EMBER::LDI_sh_hi; break;
-    case EMBER::LDI_sb_lo:
-        LDIHOpcode = EMBER::LDI_sb_hi; break;
-    case EMBER::LDI_hh_lo:
-        LDIHOpcode = EMBER::LDI_hh_hi; break;
-    case EMBER::LDI_bb_lo:
-        LDIHOpcode = EMBER::LDI_bb_hi; break;
-    case EMBER::LDI_bbbb_lo:
-        LDIHOpcode = EMBER::LDI_bbbb_hi; break;
+        case EMBER::LDI_w_lo:
+            LDIHOpcode = EMBER::LDI_w_hi;
+            break;
+        case EMBER::LDI_hh_lo:
+            LDIHOpcode = EMBER::LDI_hh_hi;
+            break;
+        case EMBER::LDI_bbbb_lo:
+            LDIHOpcode = EMBER::LDI_bbbb_hi;
+            break;
+        default:
+            Error(IDLoc, "only 32-bit types can be extended with LDIH");
     }
 
     emitToStreamer(Out, Inst);
+
+    // If it is a constant immediate value, shift it properly (if not, it's a fixup and that will be done later)
+    if (SourceImm.isImm())
+        SourceImm.setImm(SourceImm.getImm()>>16);
 
     emitToStreamer(Out, MCInstBuilder(LDIHOpcode)
         .addOperand(DestReg)
@@ -1993,10 +1902,68 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
 }
 
 
-bool EMBERAsmParser::validateInstruction(MCInst &Inst, OperandVector &Operands) 
+unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo, OperandVector &Operands) 
 {
-  return false;
+    // Any special validations?
+    switch (Inst.getOpcode())
+    {
+        default:
+            break;
+        // For some LDI opcode widths, determine if immediate value fits in N bits
+        case EMBER::LDI_h_lo:
+        case EMBER::LDI_bb_lo: 
+        {
+            MCOperand SourceImm = Inst.getOperand(1);
+            if (SourceImm.isImm())
+            {
+                uint64_t value = SourceImm.getImm();
+                if (static_cast<uint16_t>(value) == value)
+                    break;
+            }
+            ErrorInfo = 2; // rd==0, rA==1, rB/Imm==2? should be 1 for LDI
+            return Match_InvalidUImm16;
+        }
+        case EMBER::LDI_sh_lo:
+        {
+            MCOperand SourceImm = Inst.getOperand(1);
+            if (SourceImm.isImm())
+            {
+                uint64_t value = SourceImm.getImm();
+                if (static_cast<uint16_t>(value) == value)
+                    break;
+            }
+            ErrorInfo = 2;
+            return Match_InvalidSImm16;
+        }
+        case EMBER::LDI_b_lo:
+        {
+            MCOperand SourceImm = Inst.getOperand(1);
+            if (SourceImm.isImm())
+            {
+                uint64_t value = SourceImm.getImm();
+                if (static_cast<uint8_t>(value) == value)
+                    break;
+            }
+            ErrorInfo = 2;
+            return Match_InvalidUImm8;
+        }
+        case EMBER::LDI_sb_lo:
+        {
+            MCOperand SourceImm = Inst.getOperand(1);
+            if (SourceImm.isImm())
+            {
+                uint64_t value = SourceImm.getImm();
+                if (static_cast<uint8_t>(value) == value)
+                    break;
+            }
+            ErrorInfo = 2;
+            return Match_InvalidSImm8;
+        }
+    }
+
+  return Match_Success;
 }
+
 
 bool EMBERAsmParser::processInstruction(MCInst         &Inst, 
                                         SMLoc           IDLoc,

@@ -191,6 +191,17 @@ def simm16 : Operand<i32>
     let EncoderMethod = "getImmOpValue";
 }
 
+def uimm8 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmUImmOperand<8>;
+    let EncoderMethod = "getImmOpValue";
+}
+def simm8 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmSImmOperand<8>;
+    let EncoderMethod = "getImmOpValue";
+}
+
 def uimm32 : Operand<i32>
 {
     let ParserMatchClass = EMBERAsmUImmOperand<32>;
