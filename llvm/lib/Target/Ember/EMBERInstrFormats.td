@@ -41,7 +41,7 @@ class EMBERInstrSys<bits<6> op, string opcodestr, list<dag> pattern, InstrItinCl
     EMBERInst<op, (outs), (ins), opcodestr, pattern, itin>
 {
     // Clear all other bits
-    let Inst{25-0} = 0;
+    let Inst{25-0} = 0;  // Reserved
 }
 
 
@@ -49,7 +49,7 @@ class EMBERInstrSys<bits<6> op, string opcodestr, list<dag> pattern, InstrItinCl
 //======================================================================================================================
 //======================================================================================================================
 // EMBER Branch OpCodes with Register or Immediate value: 
-//  <|opcode|cond|fl|ra/simm22|>
+//  <|opcode|cond|Imm|ra/simm22|>
 //======================================================================================================================
 multiclass EMBERInstr_bra_r_i<bits<6> op, bits<3> cond, string opcodecondstr, list<dag> pattern, InstrItinClass itin>
 {
@@ -111,13 +111,51 @@ multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, 
 }
 
 
+//======================================================================================================================
+//======================================================================================================================
+// EMBER MOV OpCodes with rD and rA: 
+//  <|opcode|width|x|x|rD|x|x|rA|>
+//======================================================================================================================
+class EMBERInstr_mov_rr<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs SYS32:$srd), (ins SYS32:$sra), "mov" # widthstr # "\t$srd, \t$sra", pattern, itin>
+{
+    bits<6>  srd;       // Dest Sys-Extended Reg
+    bits<6>  sra;       // Dest Sys-Extended Reg
+    
+    // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+    let Inst{25-23} = width;
+
+    // 6 bits for Dest Reg
+    let Inst{22-17} = srd;
+
+    // 6 bits for Source Reg
+    let Inst{16-11} = sra;
+
+    let Inst{10-0} = 0; // Reserved
+}
+
+//======================================================================================================================
+// Add in the condition codes and aliases
+//======================================================================================================================
+multiclass EMBERInstr_mov<bits<6> op, list<dag> pattern, InstrItinClass itin>
+{
+    def _w    : EMBERInstr_mov_rr<op, 0x0, "",      pattern, itin>;
+    def _h    : EMBERInstr_mov_rr<op, 0x1, ".h",    pattern, itin>; 
+    def _sh   : EMBERInstr_mov_rr<op, 0x2, ".sh",   pattern, itin>;
+    def _b    : EMBERInstr_mov_rr<op, 0x3, ".b",    pattern, itin>;
+    def _sb   : EMBERInstr_mov_rr<op, 0x4, ".sb",   pattern, itin>;
+    def _hh   : EMBERInstr_mov_rr<op, 0x5, ".hh",   pattern, itin>;
+    def _bb   : EMBERInstr_mov_rr<op, 0x6, ".bb",   pattern, itin>;
+    def _bbbb : EMBERInstr_mov_rr<op, 0x7, ".bbbb", pattern, itin>;
+}
+
 
 //======================================================================================================================
 //======================================================================================================================
 // EMBER LDI OpCodes with 16-bit Immediate value: 
-//  <|opcode|cond|h|0|s|imm16|>
+//  <|opcode|width|h|0b00|imm16|>
 //======================================================================================================================
-multiclass EMBERInstr_ldi_lohis_i<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin>
+multiclass EMBERInstr_ldi_lohi_i<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin>
 {
     def _lo : EMBERInst<op, (outs GPR32:$rd), (ins uimm32:$imm32), "ldi" # widthstr # "\t$rd, \t$imm32", pattern, itin>
     {
@@ -136,28 +174,6 @@ multiclass EMBERInstr_ldi_lohis_i<bits<6> op, bits<3> width, string widthstr, li
         // low 16 bits of imm32 (code will validate, and add an additional ldih if needed to handle the high bits)
         let Inst{15-0} = imm32{15-0};
     }
-/*
-    def _los : EMBERInst<op, (outs GPR32:$rd), (ins simm16:$simm16), "ldis" # widthstr # "\t$rd, \t$simm16", pattern, itin>
-    {
-        bits<4>  rd;        // Dest Reg
-        bits<16> simm16;    // LDI low signed (fill hi16 with bit 15 of $simm16)
-    
-        // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
-        let Inst{25-23} = width;
-
-        // 4 bits for Dest Reg
-        let Inst{22-19} = rd;
-
-        // 3 flag bits 
-        let Inst{18-17} = 0b00;   // |lo|0|
-        let Inst{16} = signed;   // |signed|
-
-        let Inst{18-16} = 0b001;   // |lo|0|signed|
-
-        // 16 bits for imm16
-        let Inst{15-0} = simm16;
-    }
-*/
     def _hi : EMBERInst<op, (outs GPR32:$rd), (ins uimm16:$imm16), "ldih" # widthstr # "\t$rd, \t$imm16", pattern, itin>
     {
         bits<4>  rd;        // Dest Reg
@@ -182,14 +198,14 @@ multiclass EMBERInstr_ldi_lohis_i<bits<6> op, bits<3> width, string widthstr, li
 //======================================================================================================================
 multiclass EMBERInstr_ldi<bits<6> op, list<dag> pattern, InstrItinClass itin>
 {
-    defm _w    : EMBERInstr_ldi_lohis_i<op, 0x0, "",      pattern, itin>;
-    defm _h    : EMBERInstr_ldi_lohis_i<op, 0x1, ".h",    pattern, itin>; 
-    defm _sh   : EMBERInstr_ldi_lohis_i<op, 0x2, ".sh",   pattern, itin>;
-    defm _b    : EMBERInstr_ldi_lohis_i<op, 0x3, ".b",    pattern, itin>;
-    defm _sb   : EMBERInstr_ldi_lohis_i<op, 0x4, ".sb",   pattern, itin>;
-    defm _hh   : EMBERInstr_ldi_lohis_i<op, 0x5, ".hh",   pattern, itin>;
-    defm _bb   : EMBERInstr_ldi_lohis_i<op, 0x6, ".bb",   pattern, itin>;
-    defm _bbbb : EMBERInstr_ldi_lohis_i<op, 0x7, ".bbbb", pattern, itin>;
+    defm _w    : EMBERInstr_ldi_lohi_i<op, 0x0, "",      pattern, itin>;
+    defm _h    : EMBERInstr_ldi_lohi_i<op, 0x1, ".h",    pattern, itin>; 
+    defm _sh   : EMBERInstr_ldi_lohi_i<op, 0x2, ".sh",   pattern, itin>;
+    defm _b    : EMBERInstr_ldi_lohi_i<op, 0x3, ".b",    pattern, itin>;
+    defm _sb   : EMBERInstr_ldi_lohi_i<op, 0x4, ".sb",   pattern, itin>;
+    defm _hh   : EMBERInstr_ldi_lohi_i<op, 0x5, ".hh",   pattern, itin>;
+    defm _bb   : EMBERInstr_ldi_lohi_i<op, 0x6, ".bb",   pattern, itin>;
+    defm _bbbb : EMBERInstr_ldi_lohi_i<op, 0x7, ".bbbb", pattern, itin>;
 }
 
 
@@ -218,7 +234,7 @@ class EMBERInstrALU_rd_ra<bits<6> op, bits<3> width, dag outs, dag ins, string o
 
 //======================================================================================================================
 // EMBER OpCodes with Dest Register, Source Register, and either second Source Register OR 14-bit Immediate :
-//  <|opcode|width|rd|ra|fl|rd/uimm14|>
+//  <|opcode|width|rd|ra|Imm|rd/uimm14|>
 //======================================================================================================================
 multiclass EMBERInstrALU_rd_rr_ri<bits<6> op, bits<3> width, string opcodecondstr, list<dag> pattern, InstrItinClass itin>
 {
@@ -262,7 +278,7 @@ multiclass EMBERInstr_rd_ra_rb_imm14<bits<6> op, string opcodestr, list<dag> pat
 
 //======================================================================================================================
 // Covers EMBER OpCodes with NO Dest Register (implicit r0) and at least one Source Register : 
-//  <|opcode|cond|r0|ra|*|>
+//  <|opcode|width|r0|ra|*|>
 //======================================================================================================================
 class EMBERInstrALU_r0_ra<bits<6> op, bits<3> width, dag outs, dag ins, string opcodecondstr, string operandstr, list<dag> pattern, InstrItinClass itin> :
     EMBERInst<op, outs, ins, opcodecondstr # operandstr, pattern, itin>
@@ -281,7 +297,7 @@ class EMBERInstrALU_r0_ra<bits<6> op, bits<3> width, dag outs, dag ins, string o
 
 //======================================================================================================================
 // EMBER OpCodes with NO Dest Register (implicit r0), Source Register, and either second Source Register OR 14-bit Immediate :
-//  <|opcode|width|r0|ra|fl|rd/uimm14|>
+//  <|opcode|width|r0|ra|Imm|rd/uimm14|>
 //======================================================================================================================
 multiclass EMBERInstrALU_r0_rr_ri<bits<6> op, bits<3> width, string opcodecondstr, list<dag> pattern, InstrItinClass itin>
 {

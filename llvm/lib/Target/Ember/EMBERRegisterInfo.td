@@ -1,20 +1,21 @@
-//===-- EMBERRegisterInfo.td - EMBER Register defs -----------*- tablegen -*-===//
+//======================================================================================================================
 //
-// Copyright (c) 2021 IARI Ventures, LLC. All rights reserved.
+// Copyright (c) 2022 IARI Ventures, LLC. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
-//===----------------------------------------------------------------------===//
+
+//======================================================================================================================
 //  Declarations that describe the EMBER register file
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 let Namespace = "EMBER" in {
 def gpr32     : SubRegIndex<16>;
 def sys32     : SubRegIndex<64>;
 }
 
-class Unallocatable {
-  bit isAllocatable = 0;
-}
+//class Unallocatable {
+//  bit isAllocatable = 0;
+//}
 
 // Most instructions use banks of 16 registers each.
 class EMBERReg<bits<4> Enc, string n> : Register<n> {
@@ -35,13 +36,14 @@ class EMBERGPRReg<bits<4> Enc, string n> : EMBERReg<Enc, n>;
 class EMBERMovReg<bits<6> Enc, string n> : EMBERSysReg<Enc, n>;
 
 
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 //  Registers
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
 let Namespace = "EMBER" in {
 
   // General Purpose Registers 
+  def ZERO : EMBERGPRReg<0,  "zero">, DwarfRegNum<[0]>;
   def R0  : EMBERGPRReg< 0,  "r0">,  DwarfRegNum<[0]>;
   def R1  : EMBERGPRReg< 1,  "r1">,  DwarfRegNum<[1]>;
   def R2  : EMBERGPRReg< 2,  "r2">,  DwarfRegNum<[2]>;
@@ -62,14 +64,14 @@ let Namespace = "EMBER" in {
   // System Registers
   def CC   : EMBERMovReg< 16, "cc">,  DwarfRegNum<[16]>;
   def PC   : EMBERMovReg< 17, "pc">,  DwarfRegNum<[17]>;
-  def C0   : EMBERMovReg< 18, "c0">,  DwarfRegNum<[18]>;
-  def C1   : EMBERMovReg< 19, "c1">,  DwarfRegNum<[19]>;
-  def C2   : EMBERMovReg< 20, "c2">,  DwarfRegNum<[20]>;
-  def C3   : EMBERMovReg< 21, "c3">,  DwarfRegNum<[21]>;
+  def T0   : EMBERMovReg< 18, "t0">,  DwarfRegNum<[18]>;
+  def T1   : EMBERMovReg< 19, "t1">,  DwarfRegNum<[19]>;
+  def T2   : EMBERMovReg< 20, "t2">,  DwarfRegNum<[20]>;
+  def T3   : EMBERMovReg< 21, "t3">,  DwarfRegNum<[21]>;
 
 //  .. 22-31 reserved
 
-  // 'User' General Purpose Registers - Only accessible from Supervisor Mode code
+  // 'User' General Purpose Registers - Only referenceable from Supervisor Mode code
   def UR0  : EMBERMovReg< 32, "ur0">,  DwarfRegNum<[32]>;
   def UR1  : EMBERMovReg< 33, "ur1">,  DwarfRegNum<[33]>;
   def UR2  : EMBERMovReg< 34, "ur2">,  DwarfRegNum<[34]>;
@@ -90,46 +92,46 @@ let Namespace = "EMBER" in {
   // System Registers
   def UCC   : EMBERMovReg< 48, "ucc">, DwarfRegNum<[48]>;
   def UPC   : EMBERMovReg< 49, "upc">, DwarfRegNum<[49]>;
-  def UC0   : EMBERMovReg< 50, "uc0">, DwarfRegNum<[50]>;
-  def UC1   : EMBERMovReg< 51, "uc1">, DwarfRegNum<[51]>;
-  def UC2   : EMBERMovReg< 52, "uc2">, DwarfRegNum<[52]>;
-  def UC3   : EMBERMovReg< 53, "uc3">, DwarfRegNum<[53]>;
+  def UT0   : EMBERMovReg< 50, "ut0">, DwarfRegNum<[50]>;
+  def UT1   : EMBERMovReg< 51, "ut1">, DwarfRegNum<[51]>;
+  def UT2   : EMBERMovReg< 52, "ut2">, DwarfRegNum<[52]>;
+  def UT3   : EMBERMovReg< 53, "ut3">, DwarfRegNum<[53]>;
 
 //  .. 54-63 reserved
 
 }
 
 
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 // Register Classes
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
 def GPR32 : RegisterClass<"EMBER", [i32], 32,
     ( add 
     // Reserved
+    ZERO,
     R0,
     (sequence "R%u", 1, 13),
     // Reserved
-    LR, SP, PC, C0, C1, C2, C3)>;
+    LR, SP, PC, T0, T1, T2, T3)>;
 
 def SYS32 : RegisterClass<"EMBER", [i32], 32,
     ( add 
     // Reserved
+    ZERO,
     R0,
     (sequence "R%u", 1, 13),
     // Reserved
-    LR, SP, PC, C0, C1, C2, C3,
+    LR, SP, PC, T0, T1, T2, T3,
     // Reserved
     UR0,
     (sequence "UR%u", 1, 13),
     // Reserved
-    ULR, USP, UPC, UC0, UC1, UC2, UC3)>;
+    ULR, USP, UPC, UT0, UT1, UT2, UT3)>;
 
-def SP32 : RegisterClass<"EMBER", [i32], 32, (add SP)>;
-
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 // Register Operands.
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
 class EMBERAsmRegOperand : AsmOperandClass {
   let ParserMethod = "parseRegister";
@@ -146,11 +148,6 @@ def GPR32AsmOperand : EMBERAsmRegOperand {
 def SYS32AsmOperand : EMBERAsmRegOperand {
   let Name = "SYS32AsmReg";
   let PredicateMethod = "isSYSAsmReg";
-}
-
-def SP32AsmOperand : EMBERAsmRegOperand {
-  let Name = "SP32AsmReg";
-  let PredicateMethod = "isSPAsmReg";
 }
 
 

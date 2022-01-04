@@ -360,6 +360,13 @@ static DecodeStatus DecodeGPR32RegisterClass(MCInst &Inst, unsigned RegNo,
   return MCDisassembler::Fail;
 }
 
+static DecodeStatus DecodeSYS32RegisterClass(MCInst &Inst, unsigned RegNo,
+                                             uint64_t Addr,
+                                             const void *Decoder)
+{
+  return MCDisassembler::Fail;
+}
+
 static DecodeStatus decodeSImmOperand(MCInst &Inst, uint64_t Imm,
                                              uint64_t Addr,
                                              const void *Decoder) 

@@ -68,7 +68,7 @@ defm BRL  : EMBERInstr_bra_cond<0x07, "brl", [], NoItinerary>;
 // defm POP  : EMBERInstr_<0x00, "pop",  [], NoItinerary>; // Virtual [ld rD, (sp)++]
 
 // Move OpCode
-// defm MOV : EMBERInstr_<0x0A, "mov", [], NoItinerary>;
+defm MOV : EMBERInstr_mov<0x0A, [], NoItinerary>;
 
 // LDI OpCode (+LDIH)
 defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;

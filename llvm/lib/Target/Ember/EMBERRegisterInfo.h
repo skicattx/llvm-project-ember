@@ -1,12 +1,9 @@
-//===- EMBERRegisterInfo.h - EMBER Register Information Impl ------*- C++ -*-===//
-//
-// Copyright (c) 2021 IARI Ventures, LLC. All rights reserved.
-//
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 //
 // This file contains the EMBER implementation of the TargetRegisterInfo class.
+// Copyright (c) 2022 IARI Ventures, LLC. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
 #ifndef LLVM_LIB_TARGET_MIPS_MIPSREGISTERINFO_H
 #define LLVM_LIB_TARGET_MIPS_MIPSREGISTERINFO_H
