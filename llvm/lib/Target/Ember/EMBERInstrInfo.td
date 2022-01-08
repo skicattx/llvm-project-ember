@@ -74,8 +74,8 @@ defm MOV : EMBERInstr_mov<0x0A, [], NoItinerary>;
 defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;
 
 // Load/Store Memory OpCodes
-// defm ST : EMBERInstr_<0x0E, "ld", [], NoItinerary>;
-// defm LD : EMBERInstr_<0x0F, "st", [], NoItinerary>;
+defm LD : EMBERInstr_ld<0x0E, [], NoItinerary>;
+defm ST : EMBERInstr_st<0x0F, [], NoItinerary>;
 
 // ALU OpCodes
 defm ADD  : EMBERInstr_rd_ra_rb_imm14<0x10, "add", [], NoItinerary>;

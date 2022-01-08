@@ -117,7 +117,7 @@ multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, 
 //  <|opcode|width|x|x|rD|x|x|rA|>
 //======================================================================================================================
 class EMBERInstr_mov_rr<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin> :
-    EMBERInst<op, (outs SYS32:$srd), (ins SYS32:$sra), "mov" # widthstr # "\t$srd, \t$sra", pattern, itin>
+    EMBERInst<op, (outs SYS32:$srd), (ins SYS32:$sra), "mov" # widthstr # "\t$srd, $sra", pattern, itin>
 {
     bits<6>  srd;       // Dest Sys-Extended Reg
     bits<6>  sra;       // Dest Sys-Extended Reg
@@ -208,7 +208,136 @@ multiclass EMBERInstr_ldi<bits<6> op, list<dag> pattern, InstrItinClass itin>
     defm _bbbb : EMBERInstr_ldi_lohi_i<op, 0x7, ".bbbb", pattern, itin>;
 }
 
+//======================================================================================================================
+//======================================================================================================================
+// EMBER LD OpCodes with -- rD, (rA+14-bit Immediate value): 
+//  <|opcode|width|rd|ra|rA++|imm14|>
+//======================================================================================================================
+multiclass EMBERInstr_ld_rd_ofs_ra<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin>
+{
+    def _a : EMBERInst<op, (outs GPR32:$rd), (ins GPR32:$raddr), "ld" # widthstr # "\t$rd, $raddr", pattern, itin>
+    {
+        bits<4>  raddr;     // Dest Reg
+        bits<4>  ra;        // Source Reg
+    
+        // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+        let Inst{25-23} = width;
 
+        // 4 bits for Dest Reg
+        let Inst{22-19} = raddr;
+
+        // 4 bits for Source Reg
+        let Inst{18-15} = ra;
+
+        // 1 bits post-increment flag (particularly used for POP pseudo opcode)
+        let Inst{14} = 0;
+
+        // No Offset
+        let Inst{13-0} = 0;
+    }
+    def _ao : EMBERInst<op, (outs GPR32:$rd), (ins GPR32:$raddr, simm14:$imm14), "ld" # widthstr # "\t$rd, $raddr$imm14", pattern, itin>
+    {
+        bits<4>  rd;        // Deg Reg
+        bits<4>  raddr;     // Source Reg
+        bits<14> imm14;     // signed 14-bit dest pointer offset (will be parsed in the C++ code)
+    
+        // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+        let Inst{25-23} = width;
+
+        // 4 bits for Dest Reg
+        let Inst{22-19} = rd;
+
+        // 4 bits for Source Reg
+        let Inst{18-15} = raddr;
+
+        // 1 bits post-increment flag (particularly used for POP pseudo opcode)
+        let Inst{14} = 0;
+
+        // 14-bit signed offset
+        let Inst{13-0} = imm14;
+    }
+}
+
+//======================================================================================================================
+// Add in the condition codes and aliases
+//======================================================================================================================
+multiclass EMBERInstr_ld<bits<6> op, list<dag> pattern, InstrItinClass itin>
+{
+    defm _w    : EMBERInstr_ld_rd_ofs_ra<op, 0x0, "",      pattern, itin>;
+    defm _h    : EMBERInstr_ld_rd_ofs_ra<op, 0x1, ".h",    pattern, itin>; 
+    defm _sh   : EMBERInstr_ld_rd_ofs_ra<op, 0x2, ".sh",   pattern, itin>;
+    defm _b    : EMBERInstr_ld_rd_ofs_ra<op, 0x3, ".b",    pattern, itin>;
+    defm _sb   : EMBERInstr_ld_rd_ofs_ra<op, 0x4, ".sb",   pattern, itin>;
+    defm _hh   : EMBERInstr_ld_rd_ofs_ra<op, 0x5, ".hh",   pattern, itin>;
+    defm _bb   : EMBERInstr_ld_rd_ofs_ra<op, 0x6, ".bb",   pattern, itin>;
+    defm _bbbb : EMBERInstr_ld_rd_ofs_ra<op, 0x7, ".bbbb", pattern, itin>;
+}
+
+
+//======================================================================================================================
+//======================================================================================================================
+// EMBER ST OpCodes with --(rD+14-bit Immediate value), rA: 
+//  <|opcode|width|rd|ra|--rD|imm14|>
+//======================================================================================================================
+multiclass EMBERInstr_st_rd_ofs_ra<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin>
+{
+    def _a : EMBERInst<op, (outs GPR32:$raddr), (ins GPR32:$ra), "st" # widthstr # "\t$raddr, $ra", pattern, itin>
+    {
+        bits<4>  raddr;     // Dest Reg
+        bits<4>  ra;        // Source Reg
+    
+        // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+        let Inst{25-23} = width;
+
+        // 4 bits for Dest Reg
+        let Inst{22-19} = raddr;
+
+        // 4 bits for Source Reg
+        let Inst{18-15} = ra;
+
+        // 1 bits pre-decrement flag (particularly used for PUSH pseudo opcode)
+        let Inst{14} = 0;
+
+        // No Offset
+        let Inst{13-0} = 0;
+    }
+    def _ao : EMBERInst<op, (outs GPR32:$raddr), (ins simm14:$imm14, GPR32:$ra), "st" # widthstr # "\t$raddr$imm14, $ra", pattern, itin>
+    {
+        bits<4>  raddr;     // Dest Reg
+        bits<4>  ra;        // Source Reg
+        bits<14> imm14;     // signed 14-bit dest pointer offset (will be parsed in the C++ code)
+    
+        // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+        let Inst{25-23} = width;
+
+        // 4 bits for Dest Reg
+        let Inst{22-19} = raddr;
+
+        // 4 bits for Source Reg
+        let Inst{18-15} = ra;
+
+        // 1 bits pre-decrement flag (particularly used for PUSH pseudo opcode)
+        let Inst{14} = 0;
+
+        // 14-bit signed offset
+        let Inst{13-0} = imm14;
+    }
+}
+
+//======================================================================================================================
+// Add in the condition codes and aliases
+//======================================================================================================================
+multiclass EMBERInstr_st<bits<6> op, list<dag> pattern, InstrItinClass itin>
+{
+    defm _w    : EMBERInstr_st_rd_ofs_ra<op, 0x0, "",      pattern, itin>;
+    defm _h    : EMBERInstr_st_rd_ofs_ra<op, 0x1, ".h",    pattern, itin>; 
+    defm _sh   : EMBERInstr_st_rd_ofs_ra<op, 0x2, ".sh",   pattern, itin>;
+    defm _b    : EMBERInstr_st_rd_ofs_ra<op, 0x3, ".b",    pattern, itin>;
+    defm _sb   : EMBERInstr_st_rd_ofs_ra<op, 0x4, ".sb",   pattern, itin>;
+    defm _hh   : EMBERInstr_st_rd_ofs_ra<op, 0x5, ".hh",   pattern, itin>;
+    defm _bb   : EMBERInstr_st_rd_ofs_ra<op, 0x6, ".bb",   pattern, itin>;
+    defm _bbbb : EMBERInstr_st_rd_ofs_ra<op, 0x7, ".bbbb", pattern, itin>;
+}
 
 
 //======================================================================================================================

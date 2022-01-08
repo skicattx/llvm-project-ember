@@ -49,10 +49,10 @@ static MCDisassembler *createEMBERDisassembler(const Target &T,
   return new EMBERDisassembler(STI, Ctx, T.createMCInstrInfo());
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERDisassembler() {
-  // Register the disassembler for each target.
-  TargetRegistry::RegisterMCDisassembler(getTheEMBER32Target(),
-                                         createEMBERDisassembler);
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERDisassembler() 
+{
+    // Register the disassembler for each target.
+    TargetRegistry::RegisterMCDisassembler(getTheEMBER32Target(), createEMBERDisassembler);
 }
 
 

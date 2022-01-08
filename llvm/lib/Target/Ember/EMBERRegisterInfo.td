@@ -108,26 +108,18 @@ let Namespace = "EMBER" in {
 
 def GPR32 : RegisterClass<"EMBER", [i32], 32,
     ( add 
-    // Reserved
-    ZERO,
-    R0,
+    ZERO, R0,
     (sequence "R%u", 1, 13),
-    // Reserved
-    LR, SP, PC, T0, T1, T2, T3)>;
+    LR, SP)>;
 
 def SYS32 : RegisterClass<"EMBER", [i32], 32,
     ( add 
-    // Reserved
-    ZERO,
-    R0,
+    ZERO, R0,
     (sequence "R%u", 1, 13),
-    // Reserved
-    LR, SP, PC, T0, T1, T2, T3,
-    // Reserved
+    LR, SP, CC, PC, T0, T1, T2, T3,
     UR0,
     (sequence "UR%u", 1, 13),
-    // Reserved
-    ULR, USP, UPC, UT0, UT1, UT2, UT3)>;
+    ULR, USP, UCC, UPC, UT0, UT1, UT2, UT3)>;
 
 //======================================================================================================================
 // Register Operands.

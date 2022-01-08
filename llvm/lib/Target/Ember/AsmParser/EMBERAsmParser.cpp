@@ -692,7 +692,6 @@ OperandMatchResultTy EMBERAsmParser::parseMemOpBaseReg(OperandVector &Operands)
     }
 
     getParser().Lex(); // Eat '('
-    Operands.push_back(EMBEROperand::createToken("(", getLoc()));
 
     if (parseRegister(Operands) != MatchOperand_Success)
     {
@@ -700,14 +699,31 @@ OperandMatchResultTy EMBERAsmParser::parseMemOpBaseReg(OperandVector &Operands)
         return MatchOperand_ParseFail;
     }
 
-    if (getLexer().is(AsmToken::Plus) || getLexer().is(AsmToken::Minus))
+    uint16_t multiplier = getLexer().is(AsmToken::Plus) ? 1 : getLexer().is(AsmToken::Minus) ? -1 : 0; 
+    if (multiplier != 0)
     {
-        getParser().Lex(); // Eat '+ or -'
+//        getParser().Lex(); // Eat '+ or -'
 
-        // TODO: parse Imm offset inside address
-        Error(getLoc(), "need to handle imm offset in address");
+        // Parse Imm offset inside address
+        const MCExpr *OffsetExp;
+        if (getParser().parseExpression(OffsetExp))
+        {
+            Error(getLoc(), "Expected immediate offset in address");
+            return MatchOperand_ParseFail;
+        }
+        
+//         int64_t Imm;
+//         bool IsConstantImm = EMBEROperand::evaluateConstantImm(OffsetExp, Imm);
 
-        return MatchOperand_ParseFail;
+        SMLoc S = getLoc();
+        SMLoc E = SMLoc::getFromPointer(S.getPointer() - 1);
+        Operands.push_back(EMBEROperand::createImm(OffsetExp, S, E));
+//         Operands.push_back(&MCOperand::createImm(int16_t(Imm * multiplier)));
+// 
+//             emitInstWithOffset(MCOperand::createImm(int16_t(LoOffset)));
+// 
+// 
+//         Operands.back()
     }
 
     if (getLexer().isNot(AsmToken::RParen)) 
@@ -717,7 +733,6 @@ OperandMatchResultTy EMBERAsmParser::parseMemOpBaseReg(OperandVector &Operands)
     }
 
     getParser().Lex(); // Eat ')'
-    Operands.push_back(EMBEROperand::createToken(")", getLoc()));
 
     return MatchOperand_Success;
 }
@@ -741,14 +756,17 @@ bool EMBERAsmParser::parseOperand(OperandVector &Operands,
 //     if (parseBranchTarget(Operands) == MatchOperand_Success)
 //         return false;
 
+    // Attempt to parse as address
+    if (getLexer().is(AsmToken::LParen)) 
+    {
+        if (parseMemOpBaseReg(Operands) == MatchOperand_Success)
+            return false;
+    }
+    
     // Attempt to parse token as an immediate
     if (parseImmediate(Operands) == MatchOperand_Success) 
         return false;
 
-    // Attempt to parse as address
-    if (getLexer().is(AsmToken::LParen))
-        return parseMemOpBaseReg(Operands) != MatchOperand_Success;
-    
     // Finally we have exhausted all options and must declare defeat.
     Error(getLoc(), "unknown operand");
     return true;
@@ -769,8 +787,6 @@ bool EMBERAsmParser::ParseInstruction(ParseInstructionInfo &Info,
     // Parse first operand
     if (parseOperand(Operands, Name))
         return true;
-
-    // TODO: ( for st* or ld*? Maybe done in ParseOp?
 
     // Parse until end of statement, consuming commas between operands
     unsigned OperandIdx = 1;

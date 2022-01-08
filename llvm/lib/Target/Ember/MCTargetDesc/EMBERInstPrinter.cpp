@@ -14,6 +14,7 @@
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCSymbol.h"
@@ -55,9 +56,78 @@ void EMBERInstPrinter::printOperand(const MCInst          *MI,
     assert((Modifier == 0 || Modifier[0] == 0) && "No modifiers supported");
     const MCOperand &MO = MI->getOperand(OpNo);
 
+    bool bHandleAddress = false;
+    switch (MI->getOpcode()) 
+    {
+        default:
+            break;
+        case EMBER::ST_w_a:
+        case EMBER::ST_h_a:
+        case EMBER::ST_sh_a:
+        case EMBER::ST_b_a:
+        case EMBER::ST_sb_a:
+        case EMBER::ST_hh_a:
+        case EMBER::ST_bb_a:
+        case EMBER::ST_bbbb_a:
+        case EMBER::ST_w_ao:
+        case EMBER::ST_h_ao:
+        case EMBER::ST_sh_ao:
+        case EMBER::ST_b_ao:
+        case EMBER::ST_sb_ao:
+        case EMBER::ST_hh_ao:
+        case EMBER::ST_bb_ao:
+        case EMBER::ST_bbbb_ao:
+            bHandleAddress = (OpNo==0);
+            if (OpNo == 1 && MO.isImm())
+                return; // skip imm, we've already printed it
+            break;
+        case EMBER::LD_w_a:
+        case EMBER::LD_h_a:
+        case EMBER::LD_sh_a:
+        case EMBER::LD_b_a:
+        case EMBER::LD_sb_a:
+        case EMBER::LD_hh_a:
+        case EMBER::LD_bb_a:
+        case EMBER::LD_bbbb_a:
+        case EMBER::LD_w_ao:
+        case EMBER::LD_h_ao:
+        case EMBER::LD_sh_ao:
+        case EMBER::LD_b_ao:
+        case EMBER::LD_sb_ao:
+        case EMBER::LD_hh_ao:
+        case EMBER::LD_bb_ao:
+        case EMBER::LD_bbbb_ao:
+            bHandleAddress = (OpNo==1);
+            if (OpNo == 2 && MO.isImm())
+                return; // skip imm, we've already printed it
+            break;
+    }
+
     if (MO.isReg()) 
     {
+        if (bHandleAddress)
+            O << "(";
+
         printRegName(O, MO.getReg());
+
+        if (bHandleAddress) 
+        {
+            if (MI->getNumOperands() >= OpNo + 1) 
+            {
+                const MCOperand &MOff = MI->getOperand(OpNo+1);
+                if (MOff.isImm()) 
+                {
+                    int16_t offset = MOff.getImm();
+                    if (offset >= 0)
+                      O << "+";
+
+                    O << (int16_t)offset;
+                }
+            }
+
+            O << ")";
+        }
+
         return;
     }
 

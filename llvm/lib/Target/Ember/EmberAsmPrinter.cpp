@@ -271,9 +271,9 @@ bool EMBERAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
   if (ExtraCode && ExtraCode[0])
     return true;  // Unknown modifier
 
-  O << '[';
+  O << '(';
   printMemOperand(MI, OpNo, O);
-  O << ']';
+  O << ')';
 
   return false;
 }
