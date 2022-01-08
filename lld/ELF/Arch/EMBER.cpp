@@ -77,7 +77,7 @@ void EMBER::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
 {
     switch (rel.type) 
     {
-        case R_EMBER_32: // For now, jmust save out the 'val', this is mostly 0, but a few are .org, so probably DWARF fixups?
+        case R_EMBER_32: // For now, just save out the 'val', this is mostly 0, but a few are .org, so probably DWARF fixups?
             write32le(loc, val);
             break;
         case R_EMBER_32_PCREL: // For now this is "unknown" 32-bit (PC-rel) relocation (will be saved in ELF) probably debug/dwarf related?
@@ -87,11 +87,9 @@ void EMBER::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
             write32le(loc, (read32le(loc) & ~0x003fffff) | ( (((int64_t)val)>>2) & 0x003fffff));
             break;
         case R_EMBER_LDI_LABEL_ADDR_LO:
-            checkUInt(loc, val, 32, rel);
             write32le(loc, (read32le(loc) & ~0x0000ffff) | (val & 0x0000ffff));
             break;
         case R_EMBER_LDI_LABEL_ADDR_HI:
-            checkUInt(loc, val, 32, rel);
             write32le(loc, (read32le(loc) & ~0x0000ffff) | ( (val>>16) & 0x0000ffff));
             break;
         case R_EMBER_NONE:
