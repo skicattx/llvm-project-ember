@@ -64,10 +64,12 @@ multiclass EMBERInstr_bra_r_i<bits<6> op, bits<3> cond, string opcodecondstr, li
         // 1 bit for flag
         let Inst{22} = 0;   // Register flag
 
-        let Inst{21-14} = 0;
-        // 4 bits for Src B Reg
-        let Inst{13-10} = ra;
-        let Inst{9-0} = 0;
+        let Inst{21-19} = 0;
+
+        // 4 bits for Src A Reg
+        let Inst{18-15} = ra;
+
+        let Inst{14-0} = 0;
     }
     def _i : EMBERInst<op, (outs), (ins brtargetSImm22:$br22), opcodecondstr # "\t$br22", pattern, itin>
     {
