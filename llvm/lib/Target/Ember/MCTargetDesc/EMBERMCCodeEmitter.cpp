@@ -417,8 +417,8 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
             case EMBER::LDI_w_lo:
             case EMBER::LDI_h_lo:
             case EMBER::LDI_b_lo:
-            case EMBER::LDI_sh_lo:
-            case EMBER::LDI_sb_lo:
+            case EMBER::LDIS_sh:
+            case EMBER::LDIS_sb:
             case EMBER::LDI_hh_lo:
             case EMBER::LDI_bb_lo:
             case EMBER::LDI_bbbb_lo:
@@ -427,8 +427,6 @@ unsigned EMBERMCCodeEmitter::getImmOpValue(const MCInst             &MI,
             case EMBER::LDI_w_hi:
             case EMBER::LDI_h_hi:
             case EMBER::LDI_b_hi:
-            case EMBER::LDI_sh_hi:
-            case EMBER::LDI_sb_hi:
             case EMBER::LDI_hh_hi:
             case EMBER::LDI_bb_hi:
             case EMBER::LDI_bbbb_hi:

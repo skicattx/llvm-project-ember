@@ -197,6 +197,12 @@ def uimm32 : Operand<i32>
     let EncoderMethod = "getImmOpValue";
 }
 
+def simm32 : Operand<i32>
+{
+    let ParserMatchClass = EMBERAsmSImmOperand<32>;
+    let EncoderMethod = "getImmOpValue";
+}
+
 def BranchTargetAsmOperand : AsmOperandClass 
 {
     let Name = "BranchTarget";

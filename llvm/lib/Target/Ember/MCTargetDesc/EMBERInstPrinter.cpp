@@ -26,6 +26,7 @@ using namespace llvm;
 #define DEBUG_TYPE "asm-printer"
 
 #include <sstream>
+#include <iomanip>
 
 // Include the auto-generated portion of the assembly writer.
 #define PRINT_ALIAS_INSTR
@@ -112,7 +113,7 @@ void EMBERInstPrinter::printOperand(const MCInst          *MI,
 
         if (bHandleAddress) 
         {
-            if (MI->getNumOperands() >= OpNo + 1) 
+            if (MI->getNumOperands() > OpNo + 1) 
             {
                 const MCOperand &MOff = MI->getOperand(OpNo+1);
                 if (MOff.isImm()) 
@@ -135,7 +136,29 @@ void EMBERInstPrinter::printOperand(const MCInst          *MI,
     {
         // Write the constant as hex (we could look at the opcode and determine how to write, how many digits, etc.)
         std::stringstream value;
-        value << "$" << std::hex << (uint32_t)MO.getImm();
+        value << "$" << std::hex;
+
+        switch (MI->getOpcode()) 
+        {
+            // > 16-bit values, or unknown
+            default:          
+                value << (uint32_t)MO.getImm();
+                break;
+
+            // 16-bit Values
+            case EMBER::LDI_w_lo:
+            case EMBER::LDI_h_lo:
+            case EMBER::LDIS_sh:
+            case EMBER::LDI_bb_lo:
+                value << std::setfill('0') << std::setw(4) << (uint16_t)MO.getImm();
+                break;
+
+            // 8-bit Values
+            case EMBER::LDI_b_lo:
+            case EMBER::LDIS_sb:
+                value << (uint8_t)MO.getImm();
+                break;
+        }
 
         O << value.str();
         return;

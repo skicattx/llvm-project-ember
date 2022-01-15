@@ -110,6 +110,99 @@ multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, 
     defm _v  : EMBERInstr_bra_r_i<op, 0x7, opcodestr # ".v" , pattern, itin>;
 }
 
+//======================================================================================================================
+// EMBER RTL Pseudo OpCode: 
+//  <|mov|0|0|pc|0|0|lr|>
+//======================================================================================================================
+class EMBERInstr_PseudoRTL<bits<6> op, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs ), (ins ), "rtl", pattern, itin>
+{
+    // Then 3 bits for the 'WidthCode'
+    let Inst{25-23} = 0;
+
+    // 6 bits for Dest Reg (pc)
+    let Inst{22-17} = 17;
+
+    // 6 bits for Source Reg (lr)
+    let Inst{16-11} = 14;
+
+    let Inst{10-0} = 0; // Reserved
+}
+
+//======================================================================================================================
+// EMBER POP Pseudo OpCode: 
+//  <|ld|0|zero|sp|sp++|0|>
+//======================================================================================================================
+class EMBERInstr_PseudoRET<bits<6> op, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs GPR32:$rd), (ins ), "ret", pattern, itin>
+{
+    // Then 3 bits for the 'WidthCode'
+    let Inst{25-23} = 0;
+
+    // 4 bits for Dest Reg
+    let Inst{22-19} = 0; // write to zero register AND post increment flag means RET instruction "ld pc, (ps)++")
+
+    // 4 bits for Source Reg (sp)
+    let Inst{18-15} = 15;
+
+    // 1 bit post-increment sp flag
+    let Inst{14} = 1;
+
+    // No Offset
+    let Inst{13-0} = 0;
+}
+
+
+//======================================================================================================================
+// EMBER POP Pseudo OpCode: 
+//  <|ld|0|rd|sp|sp++|0|>
+//======================================================================================================================
+class EMBERInstr_PseudoPOP<bits<6> op, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs GPR32:$rd), (ins ), "pop\t$rd", pattern, itin>
+{
+    bits<4>  rd;     // Dest Reg
+    
+    // Then 3 bits for the 'WidthCode'
+    let Inst{25-23} = 0;
+
+    // 4 bits for Dest Reg
+    let Inst{22-19} = rd;
+
+    // 4 bits for Source Reg (sp)
+    let Inst{18-15} = 15;
+
+    // 1 bit post-increment sp flag
+    let Inst{14} = 1;
+
+    // No Offset
+    let Inst{13-0} = 0;
+}
+
+//======================================================================================================================
+// EMBER PUSH Pseudo OpCode: 
+//  <|st|0|sp|rA|--sp|0|>
+//======================================================================================================================
+class EMBERInstr_PseudoPUSH<bits<6> op, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs ), (ins GPR32:$ra), "push\t$ra", pattern, itin>
+{
+    bits<4>  ra;        // Source Reg
+    
+    // Then 3 bits for the 'WidthCode'
+    let Inst{25-23} = 0;
+
+    // 4 bits for Dest Reg (sp)
+    let Inst{22-19} = 15;
+
+    // 4 bits for Source Reg
+    let Inst{18-15} = ra;
+
+    // 1 bits pre-decrement sp flag 
+    let Inst{14} = 1;
+
+    // No Offset
+    let Inst{13-0} = 0;
+}
+
 
 //======================================================================================================================
 //======================================================================================================================
@@ -192,6 +285,24 @@ multiclass EMBERInstr_ldi_lohi_i<bits<6> op, bits<3> width, string widthstr, lis
         let Inst{15-0} = imm16;
     }
 }
+class EMBERInstr_ldis_lohi_i<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin> :
+    EMBERInst<op, (outs GPR32:$rd), (ins simm16:$imm16), "ldi" # widthstr # "\t$rd, \t$imm16", pattern, itin>
+{
+    bits<4>  rd;        // Dest Reg
+    bits<16> imm16;     // LDI low signed 
+    
+    // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
+    let Inst{25-23} = width;
+
+    // 4 bits for Dest Reg
+    let Inst{22-19} = rd;
+
+    // 3 flag bits 
+    let Inst{18-16} = 0b000; // |lo|0|0|
+
+    // low 16 bits of imm32 (code will validate)
+    let Inst{15-0} = imm16;
+}
 
 //======================================================================================================================
 // Add in the condition codes and aliases
@@ -200,12 +311,15 @@ multiclass EMBERInstr_ldi<bits<6> op, list<dag> pattern, InstrItinClass itin>
 {
     defm _w    : EMBERInstr_ldi_lohi_i<op, 0x0, "",      pattern, itin>;
     defm _h    : EMBERInstr_ldi_lohi_i<op, 0x1, ".h",    pattern, itin>; 
-    defm _sh   : EMBERInstr_ldi_lohi_i<op, 0x2, ".sh",   pattern, itin>;
     defm _b    : EMBERInstr_ldi_lohi_i<op, 0x3, ".b",    pattern, itin>;
-    defm _sb   : EMBERInstr_ldi_lohi_i<op, 0x4, ".sb",   pattern, itin>;
     defm _hh   : EMBERInstr_ldi_lohi_i<op, 0x5, ".hh",   pattern, itin>;
     defm _bb   : EMBERInstr_ldi_lohi_i<op, 0x6, ".bb",   pattern, itin>;
     defm _bbbb : EMBERInstr_ldi_lohi_i<op, 0x7, ".bbbb", pattern, itin>;
+}
+multiclass EMBERInstr_ldis<bits<6> op, list<dag> pattern, InstrItinClass itin>
+{
+    def _sh   : EMBERInstr_ldis_lohi_i<op, 0x2, ".sh",   pattern, itin>;
+    def _sb   : EMBERInstr_ldis_lohi_i<op, 0x4, ".sb",   pattern, itin>;
 }
 
 //======================================================================================================================
@@ -217,17 +331,17 @@ multiclass EMBERInstr_ld_rd_ofs_ra<bits<6> op, bits<3> width, string widthstr, l
 {
     def _a : EMBERInst<op, (outs GPR32:$rd), (ins GPR32:$raddr), "ld" # widthstr # "\t$rd, $raddr", pattern, itin>
     {
-        bits<4>  raddr;     // Dest Reg
-        bits<4>  ra;        // Source Reg
+        bits<4>  rd;     // Dest Reg
+        bits<4>  raddr;  // Source Reg
     
         // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
         let Inst{25-23} = width;
 
         // 4 bits for Dest Reg
-        let Inst{22-19} = raddr;
+        let Inst{22-19} = rd;
 
         // 4 bits for Source Reg
-        let Inst{18-15} = ra;
+        let Inst{18-15} = raddr;
 
         // 1 bits post-increment flag (particularly used for POP pseudo opcode)
         let Inst{14} = 0;
@@ -378,7 +492,7 @@ multiclass EMBERInstrALU_rd_rr_ri<bits<6> op, bits<3> width, string opcodecondst
         let Inst{13-10} = rb;
         let Inst{9-0} = 0;
     }
-    def _ri : EMBERInstrALU_rd_ra<op, width, (outs GPR32:$rd), (ins GPR32:$ra, uimm14:$imm14), opcodecondstr, "\t$rd, $ra, $imm14", pattern, itin>
+    def _ri : EMBERInstrALU_rd_ra<op, width, (outs GPR32:$rd), (ins GPR32:$ra, simm14:$imm14), opcodecondstr, "\t$rd, $ra, $imm14", pattern, itin>
     {
         bits<14>  imm14;
 
@@ -441,7 +555,7 @@ multiclass EMBERInstrALU_r0_rr_ri<bits<6> op, bits<3> width, string opcodecondst
         let Inst{13-10} = rb;
         let Inst{9-0} = 0;
     }
-    def _ri : EMBERInstrALU_r0_ra<op, width, (outs), (ins GPR32:$ra, uimm14:$imm14), opcodecondstr, "\t$ra, $imm14", pattern, itin>
+    def _ri : EMBERInstrALU_r0_ra<op, width, (outs), (ins GPR32:$ra, simm14:$imm14), opcodecondstr, "\t$ra, $imm14", pattern, itin>
     {
         bits<14>  imm14;
 

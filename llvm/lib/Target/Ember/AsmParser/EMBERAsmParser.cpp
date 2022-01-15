@@ -298,6 +298,22 @@ public:
         return true;
     }
 
+    bool isSImm32() const 
+    {
+        int64_t Imm;
+        if (!isImm())
+            return false;
+
+        if (evaluateConstantImm(getImm(), Imm))
+        {
+            // If it's a literal imm, then check the bits
+            return isInt<32>(Imm);
+        }
+
+        // otherwise, it's a label or whatever, and will need a fixup anyway, so just return true for now
+        return true;
+    }
+
 //   bool isImmZero() const {
 //     if (!isImm())
 //       return false;
@@ -564,6 +580,8 @@ bool EMBERAsmParser::MatchAndEmitInstruction(SMLoc IDLoc, unsigned &Opcode,
             return generateImmOutOfRangeError(Operands, ErrorInfo, 0, (1 << 16) - 1);
         case Match_InvalidUImm32:
             return generateImmOutOfRangeError(Operands, ErrorInfo, 0, ((uint64_t)1 << 32) - 1, "Immediate or Label must resolve to a value in the range");
+        case Match_InvalidSImm32:
+            return generateImmOutOfRangeError(Operands, ErrorInfo, -((uint64_t)1 << 31), ((uint64_t)1 << 32) - 1, "Immediate or Label must resolve to a value in the range");
         case Match_InvalidBranchTarget:
             return generateImmOutOfRangeError(Operands, ErrorInfo, -(1 << 21), (1 << 21) - 1, "Branch target must be a Register or Label. Constant literal offsets are not allowed.");
     }
@@ -951,13 +969,13 @@ unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo,
             ErrorInfo = 2; // rd==0, rA==1, rB/Imm==2? should be 1 for LDI
             return Match_InvalidUImm16;
         }
-        case EMBER::LDI_sh_lo:
+        case EMBER::LDIS_sh:
         {
             MCOperand SourceImm = Inst.getOperand(1);
             if (SourceImm.isImm())
             {
                 uint64_t value = SourceImm.getImm();
-                if (static_cast<uint16_t>(value) == value)
+                if (static_cast<int16_t>(value) == value || value < 0x10000)
                     break;
             }
             ErrorInfo = 2;
@@ -975,13 +993,13 @@ unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo,
             ErrorInfo = 2;
             return Match_InvalidUImm8;
         }
-        case EMBER::LDI_sb_lo:
+        case EMBER::LDIS_sb:
         {
             MCOperand SourceImm = Inst.getOperand(1);
             if (SourceImm.isImm())
             {
-                uint64_t value = SourceImm.getImm();
-                if (static_cast<uint8_t>(value) == value)
+                int64_t value = SourceImm.getImm();
+                if (static_cast<int8_t>(value) == value || value < 0x100)
                     break;
             }
             ErrorInfo = 2;
@@ -1009,8 +1027,8 @@ bool EMBERAsmParser::processInstruction(MCInst         &Inst,
     case EMBER::LDI_w_lo:
     case EMBER::LDI_h_lo:
     case EMBER::LDI_b_lo:
-    case EMBER::LDI_sh_lo:
-    case EMBER::LDI_sb_lo:
+    case EMBER::LDIS_sh:
+    case EMBER::LDIS_sb:
     case EMBER::LDI_hh_lo:
     case EMBER::LDI_bb_lo:
     case EMBER::LDI_bbbb_lo:

@@ -62,16 +62,17 @@ def  RTI  : EMBERInstrSys<0x03, "rti", [], NoItinerary>;
 // Branch OpCodes
 defm BRA  : EMBERInstr_bra_cond<0x06, "bra", [], NoItinerary>;
 defm BRL  : EMBERInstr_bra_cond<0x07, "brl", [], NoItinerary>;
-// defm RET  : EMBERInstr_<0x00, "ret",  [], NoItinerary>; // Virtual [ld pc, (sp)++] Bad idea? maybe just dont support this...ld can't access pc by default... 
-// defm RTL  : EMBERInstr_<0x00, "rtl",  [], NoItinerary>; // Virtual [mov pc, lr]
-// defm PUSH : EMBERInstr_<0x00, "push", [], NoItinerary>; // Virtual [st --(sp), rA]
-// defm POP  : EMBERInstr_<0x00, "pop",  [], NoItinerary>; // Virtual [ld rD, (sp)++]
+def RTL   : EMBERInstr_PseudoRTL<0x0A, [], NoItinerary>; // Pseudo  [mov pc, lr]
+def RET   : EMBERInstr_PseudoRET<0x0E, [], NoItinerary>; // Pseudo? [ld pc, (sp)++] ld can't access pc by default, so when the output register is zero AND the post increment bit is set...the CPU will write to the pc register 
+def POP   : EMBERInstr_PseudoPOP<0x0E, [], NoItinerary>; // Pseudo  [ld rD, (sp)++]
+def PUSH  : EMBERInstr_PseudoPUSH<0x0F,[], NoItinerary>; // Pseudo  [st --(sp), rA]
 
 // Move OpCode
 defm MOV : EMBERInstr_mov<0x0A, [], NoItinerary>;
 
 // LDI OpCode (+LDIH)
 defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;
+defm LDIS : EMBERInstr_ldis<0x0B, [], NoItinerary>;
 
 // Load/Store Memory OpCodes
 defm LD : EMBERInstr_ld<0x0E, [], NoItinerary>;
@@ -94,8 +95,8 @@ defm XOR  : EMBERInstr_rd_ra_rb_imm14<0x1B, "xor", [], NoItinerary>;
 defm LSR  : EMBERInstr_rd_ra_rb_imm14<0x1C, "lsr", [], NoItinerary>;
 defm LSL  : EMBERInstr_rd_ra_rb_imm14<0x1D, "lsl", [], NoItinerary>;
 defm ASR  : EMBERInstr_rd_ra_rb_imm14<0x1E, "asr", [], NoItinerary>;
-defm CMP  : EMBERInstr_ra_rb_imm14<0x11, "sub", [], NoItinerary>; // Virtual [SUB r0, rA, rB/[Imm15]]
-defm TST  : EMBERInstr_ra_rb_imm14<0x19, "and", [], NoItinerary>; // Virtual [AND r0, rA, rB/[Imm15]]
+defm CMP  : EMBERInstr_ra_rb_imm14<0x11, "cmp", [], NoItinerary>; // Pseudo [SUB r0, rA, rB/[Imm15]]
+defm TST  : EMBERInstr_ra_rb_imm14<0x19, "tst", [], NoItinerary>; // Pseudo [AND r0, rA, rB/[Imm15]]
 
 
 
