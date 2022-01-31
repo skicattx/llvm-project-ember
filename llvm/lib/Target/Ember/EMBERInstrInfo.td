@@ -54,8 +54,8 @@ include "EMBERInstrFormats.td"
 //======================================================================================================================
 
 // Special/System OpCodes
-def  HALT : EMBERInstrSys<0x00, "halt", [], NoItinerary>;
-def  NOP  : EMBERInstrSys<0x01, "nop", [], NoItinerary>;
+def  NOP  : EMBERInstrSys<0x00, "nop", [], NoItinerary>;
+def  HALT : EMBERInstrSys<0x01, "halt", [], NoItinerary>;
 def  INT  : EMBERInstrSys<0x02, "int", [], NoItinerary>;
 def  RTI  : EMBERInstrSys<0x03, "rti", [], NoItinerary>;
 
