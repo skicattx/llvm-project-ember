@@ -19,6 +19,7 @@
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/ErrorOr.h"
 
 namespace clang {
@@ -31,7 +32,11 @@ template <class RefTy> class MapEntryOptionalStorage;
 /// Cached information about one directory (either on disk or in
 /// the virtual file system).
 class DirectoryEntry {
+  DirectoryEntry() = default;
+  DirectoryEntry(const DirectoryEntry &) = delete;
+  DirectoryEntry &operator=(const DirectoryEntry &) = delete;
   friend class FileManager;
+  friend class FileEntryTestHelper;
 
   // FIXME: We should not be storing a directory entry name here.
   StringRef Name; // Name of the directory.
@@ -120,28 +125,25 @@ public:
   MapEntryOptionalStorage() : MaybeRef(optional_none_tag()) {}
 
   template <class... ArgTypes>
-  explicit MapEntryOptionalStorage(llvm::optional_detail::in_place_t,
-                                   ArgTypes &&...Args)
+  explicit MapEntryOptionalStorage(llvm::in_place_t, ArgTypes &&...Args)
       : MaybeRef(std::forward<ArgTypes>(Args)...) {}
 
   void reset() { MaybeRef = optional_none_tag(); }
 
   bool hasValue() const { return MaybeRef.hasOptionalValue(); }
 
-  RefTy &getValue() LLVM_LVALUE_FUNCTION {
+  RefTy &getValue() & {
     assert(hasValue());
     return MaybeRef;
   }
-  RefTy const &getValue() const LLVM_LVALUE_FUNCTION {
+  RefTy const &getValue() const & {
     assert(hasValue());
     return MaybeRef;
   }
-#if LLVM_HAS_RVALUE_REFERENCE_THIS
   RefTy &&getValue() && {
     assert(hasValue());
     return std::move(MaybeRef);
   }
-#endif
 
   template <class... Args> void emplace(Args &&...args) {
     MaybeRef = RefTy(std::forward<Args>(args)...);

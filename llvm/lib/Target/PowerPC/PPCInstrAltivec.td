@@ -347,7 +347,7 @@ def DSS      : DSS_Form<0, 822, (outs), (ins u5imm:$STRM),
 }
 
 def DSSALL   : DSS_Form<1, 822, (outs), (ins),
-                        "dssall", IIC_LdStLoad /*FIXME*/, [(int_ppc_altivec_dssall)]>,
+                        "dssall", IIC_LdStLoad /*FIXME*/, []>,
                         Deprecated<DeprecatedDST> {
   let STRM = 0;
   let A = 0;
@@ -865,6 +865,13 @@ def V_SETALLONES  : VXForm_3<908, (outs vrrc:$vD), (ins),
 def : InstAlias<"vmr $vD, $vA", (VOR vrrc:$vD, vrrc:$vA, vrrc:$vA)>;
 def : InstAlias<"vnot $vD, $vA", (VNOR vrrc:$vD, vrrc:$vA, vrrc:$vA)>;
 
+// This is a nop on all supported architectures and the AIX assembler
+// doesn't support it (and will not be updated to support it).
+let Predicates = [IsAIX] in
+def : Pat<(int_ppc_altivec_dssall), (NOP)>;
+let Predicates = [NotAIX] in
+def : Pat<(int_ppc_altivec_dssall), (DSSALL)>;
+
 // Rotates.
 def : Pat<(v16i8 (rotl v16i8:$vA, v16i8:$vB)),
           (v16i8 (VRLB v16i8:$vA, v16i8:$vB))>;
@@ -1135,6 +1142,8 @@ def : Pat<(v4f32 (vselect v4i32:$vA, v4f32:$vB, v4f32:$vC)),
           (VSEL $vC, $vB, $vA)>;
 def : Pat<(v2f64 (vselect v2i64:$vA, v2f64:$vB, v2f64:$vC)),
           (VSEL $vC, $vB, $vA)>;
+def : Pat<(v1i128 (vselect v1i128:$vA, v1i128:$vB, v1i128:$vC)),
+          (VSEL $vC, $vB, $vA)>;
 
 // Vector Integer Average Instructions
 def : Pat<(v4i32 (sra (sub v4i32:$vA, (vnot v4i32:$vB)),
@@ -1151,6 +1160,22 @@ def : Pat<(v16i8 (srl (sub v16i8:$vA, (v16i8 (bitconvert(vnot v4i32:$vB)))),
           (v16i8 (immEQOneV)))), (v16i8 (VAVGUB $vA, $vB))>;
 
 } // end HasAltivec
+
+// [PO VRT VRA VRB 1 PS XO], "_o" means CR6 is set.
+class VX_VT5_VA5_VB5_PS1_XO9_o<bits<9> xo, string opc, list<dag> pattern>
+  : VX_RD5_RSp5_PS1_XO9<xo,
+                   (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB, u1imm:$PS),
+                   !strconcat(opc, " $vD, $vA, $vB, $PS"), IIC_VecFP, pattern> {
+  let Defs = [CR6];
+}
+
+// [PO VRT VRA VRB 1 / XO]
+class VX_VT5_VA5_VB5_XO9_o<bits<9> xo, string opc, list<dag> pattern>
+  : VX_RD5_RSp5_PS1_XO9<xo, (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB),
+                        !strconcat(opc, " $vD, $vA, $vB"), IIC_VecFP, pattern> {
+  let Defs = [CR6];
+  let PS = 0;
+}
 
 def HasP8Altivec : Predicate<"Subtarget->hasP8Altivec()">;
 def HasP8Crypto : Predicate<"Subtarget->hasP8Crypto()">;
@@ -1342,6 +1367,13 @@ def VUPKHSW : VX2_Int_Ty2<1614, "vupkhsw", int_ppc_altivec_vupkhsw,
                           v2i64, v4i32>;
 def VUPKLSW : VX2_Int_Ty2<1742, "vupklsw", int_ppc_altivec_vupklsw,
                           v2i64, v4i32>;
+def BCDADD_rec : VX_VT5_VA5_VB5_PS1_XO9_o<1,  "bcdadd." , []>;
+def BCDSUB_rec : VX_VT5_VA5_VB5_PS1_XO9_o<65, "bcdsub." , []>;
+
+def : Pat<(v16i8 (int_ppc_bcdadd v16i8:$vA, v16i8:$vB, timm:$PS)),
+          (BCDADD_rec $vA, $vB, $PS)>;
+def : Pat<(v16i8 (int_ppc_bcdsub v16i8:$vA, v16i8:$vB, timm:$PS)),
+          (BCDSUB_rec $vA, $vB, $PS)>;
 
 // Shuffle patterns for unary and swapped (LE) vector pack modulo.
 def:Pat<(vpkudum_unary_shuffle v16i8:$vA, undef),
@@ -1509,8 +1541,8 @@ def VPRTYBQ : VX_VT5_EO5_VB5<1538, 10, "vprtybq", [(set v1i128:$vD,
                             (int_ppc_altivec_vprtybq v1i128:$vB))]>;
 
 // Vector (Bit) Permute (Right-indexed)
-def VBPERMD : VXForm_1<1484, (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB),
-                       "vbpermd $vD, $vA, $vB", IIC_VecFP, []>;
+def VBPERMD : VX1_Int_Ty3<1484, "vbpermd", int_ppc_altivec_vbpermd,
+                          v2i64, v2i64, v16i8>;
 def VPERMR : VAForm_1a<59, (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB, vrrc:$vC),
                        "vpermr $vD, $vA, $vB, $vC", IIC_VecFP, []>;
 
@@ -1588,22 +1620,6 @@ let Defs = [CR6] in
 def BCDCPSGN_rec : VX1_VT5_VA5_VB5<833, "bcdcpsgn.", []>;
 
 def BCDSETSGN_rec : VX_VT5_EO5_VB5_PS1_XO9_o<31, 385, "bcdsetsgn.", []>;
-
-// [PO VRT VRA VRB 1 PS XO], "_o" means CR6 is set.
-class VX_VT5_VA5_VB5_PS1_XO9_o<bits<9> xo, string opc, list<dag> pattern>
-  : VX_RD5_RSp5_PS1_XO9<xo,
-                   (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB, u1imm:$PS),
-                   !strconcat(opc, " $vD, $vA, $vB, $PS"), IIC_VecFP, pattern> {
-  let Defs = [CR6];
-}
-
-// [PO VRT VRA VRB 1 / XO]
-class VX_VT5_VA5_VB5_XO9_o<bits<9> xo, string opc, list<dag> pattern>
-  : VX_RD5_RSp5_PS1_XO9<xo, (outs vrrc:$vD), (ins vrrc:$vA, vrrc:$vB),
-                        !strconcat(opc, " $vD, $vA, $vB"), IIC_VecFP, pattern> {
-  let Defs = [CR6];
-  let PS = 0;
-}
 
 // Decimal Shift/Unsigned-Shift/Shift-and-Round
 def BCDS_rec :  VX_VT5_VA5_VB5_PS1_XO9_o<193, "bcds." , []>;

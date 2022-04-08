@@ -36,9 +36,11 @@
 #include "polly/ScopDetection.h"
 #include "polly/ScopInfo.h"
 #include "polly/Simplify.h"
+#include "polly/Support/DumpFunctionPass.h"
 #include "polly/Support/DumpModulePass.h"
 #include "llvm/Analysis/CFGPrinter.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -47,12 +49,17 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-using namespace llvm;
-using namespace polly;
+namespace cl = llvm::cl;
+
+using llvm::FunctionPassManager;
+using llvm::OptimizationLevel;
+using llvm::PassBuilder;
+using llvm::PassInstrumentationCallbacks;
 
 cl::OptionCategory PollyCategory("Polly Options",
                                  "Configure the polly loop optimizer");
 
+namespace polly {
 static cl::opt<bool>
     PollyEnabled("polly",
                  cl::desc("Enable the polly optimizer (with -O1, -O2 or -O3)"),
@@ -111,17 +118,17 @@ static cl::opt<TargetChoice>
                           ),
            cl::init(TARGET_CPU), cl::ZeroOrMore, cl::cat(PollyCategory));
 
-VectorizerChoice polly::PollyVectorizerChoice;
-static cl::opt<polly::VectorizerChoice, true> Vectorizer(
+VectorizerChoice PollyVectorizerChoice;
+
+static cl::opt<VectorizerChoice, true> Vectorizer(
     "polly-vectorizer", cl::desc("Select the vectorization strategy"),
     cl::values(
-        clEnumValN(polly::VECTORIZER_NONE, "none", "No Vectorization"),
-        clEnumValN(polly::VECTORIZER_POLLY, "polly",
-                   "Polly internal vectorizer"),
+        clEnumValN(VECTORIZER_NONE, "none", "No Vectorization"),
+        clEnumValN(VECTORIZER_POLLY, "polly", "Polly internal vectorizer"),
         clEnumValN(
-            polly::VECTORIZER_STRIPMINE, "stripmine",
+            VECTORIZER_STRIPMINE, "stripmine",
             "Strip-mine outer loops for the loop-vectorizer to trigger")),
-    cl::location(PollyVectorizerChoice), cl::init(polly::VECTORIZER_NONE),
+    cl::location(PollyVectorizerChoice), cl::init(VECTORIZER_NONE),
     cl::ZeroOrMore, cl::cat(PollyCategory));
 
 static cl::opt<bool> ImportJScop(
@@ -236,8 +243,7 @@ public:
 static StaticInitializer InitializeEverything;
 } // end of anonymous namespace.
 
-namespace polly {
-void initializePollyPasses(PassRegistry &Registry) {
+void initializePollyPasses(llvm::PassRegistry &Registry) {
   initializeCodeGenerationPass(Registry);
 
 #ifdef GPU_CODEGEN
@@ -251,25 +257,37 @@ void initializePollyPasses(PassRegistry &Registry) {
   initializeCodePreparationPass(Registry);
   initializeDeadCodeElimWrapperPassPass(Registry);
   initializeDependenceInfoPass(Registry);
+  initializeDependenceInfoPrinterLegacyPassPass(Registry);
   initializeDependenceInfoWrapperPassPass(Registry);
+  initializeDependenceInfoPrinterLegacyFunctionPassPass(Registry);
   initializeJSONExporterPass(Registry);
   initializeJSONImporterPass(Registry);
+  initializeJSONImporterPrinterLegacyPassPass(Registry);
   initializeMaximalStaticExpanderPass(Registry);
   initializeIslAstInfoWrapperPassPass(Registry);
+  initializeIslAstInfoPrinterLegacyPassPass(Registry);
   initializeIslScheduleOptimizerWrapperPassPass(Registry);
+  initializeIslScheduleOptimizerPrinterLegacyPassPass(Registry);
   initializePollyCanonicalizePass(Registry);
   initializePolyhedralInfoPass(Registry);
+  initializePolyhedralInfoPrinterLegacyPassPass(Registry);
   initializeScopDetectionWrapperPassPass(Registry);
+  initializeScopDetectionPrinterLegacyPassPass(Registry);
   initializeScopInlinerPass(Registry);
   initializeScopInfoRegionPassPass(Registry);
+  initializeScopInfoPrinterLegacyRegionPassPass(Registry);
   initializeScopInfoWrapperPassPass(Registry);
-  initializeRewriteByrefParamsPass(Registry);
+  initializeScopInfoPrinterLegacyFunctionPassPass(Registry);
   initializeCodegenCleanupPass(Registry);
   initializeFlattenSchedulePass(Registry);
+  initializeFlattenSchedulePrinterLegacyPassPass(Registry);
   initializeForwardOpTreeWrapperPassPass(Registry);
+  initializeForwardOpTreePrinterLegacyPassPass(Registry);
   initializeDeLICMWrapperPassPass(Registry);
+  initializeDeLICMPrinterLegacyPassPass(Registry);
   initializeSimplifyWrapperPassPass(Registry);
-  initializeDumpModulePass(Registry);
+  initializeSimplifyPrinterLegacyPassPass(Registry);
+  initializeDumpModuleWrapperPassPass(Registry);
   initializePruneUnprofitableWrapperPassPass(Registry);
 }
 
@@ -302,10 +320,11 @@ void initializePollyPasses(PassRegistry &Registry) {
 static void registerPollyPasses(llvm::legacy::PassManagerBase &PM,
                                 bool EnableForOpt) {
   if (DumpBefore)
-    PM.add(polly::createDumpModulePass("-before", true));
+    PM.add(polly::createDumpModuleWrapperPass("-before", true));
   for (auto &Filename : DumpBeforeFile)
-    PM.add(polly::createDumpModulePass(Filename, false));
+    PM.add(polly::createDumpModuleWrapperPass(Filename, false));
 
+  PM.add(polly::createCodePreparationPass());
   PM.add(polly::createScopDetectionWrapperPassPass());
 
   if (PollyDetectOnly)
@@ -394,12 +413,12 @@ static void registerPollyPasses(llvm::legacy::PassManagerBase &PM,
   // FIXME: This dummy ModulePass keeps some programs from miscompiling,
   // probably some not correctly preserved analyses. It acts as a barrier to
   // force all analysis results to be recomputed.
-  PM.add(createBarrierNoopPass());
+  PM.add(llvm::createBarrierNoopPass());
 
   if (DumpAfter)
-    PM.add(polly::createDumpModulePass("-after", true));
+    PM.add(polly::createDumpModuleWrapperPass("-after", true));
   for (auto &Filename : DumpAfterFile)
-    PM.add(polly::createDumpModulePass(Filename, false));
+    PM.add(polly::createDumpModuleWrapperPass(Filename, false));
 
   if (CFGPrinter)
     PM.add(llvm::createCFGPrinterLegacyPassPass());
@@ -443,7 +462,6 @@ registerPollyLoopOptimizerEndPasses(const llvm::PassManagerBuilder &Builder,
   if (!shouldEnablePollyForDiagnostic() && !EnableForOpt)
     return;
 
-  PM.add(polly::createCodePreparationPass());
   registerPollyPasses(PM, EnableForOpt);
   if (EnableForOpt)
     PM.add(createCodegenCleanupPass());
@@ -460,19 +478,22 @@ registerPollyScalarOptimizerLatePasses(const llvm::PassManagerBuilder &Builder,
   if (!shouldEnablePollyForDiagnostic() && !EnableForOpt)
     return;
 
-  PM.add(polly::createCodePreparationPass());
   polly::registerPollyPasses(PM, EnableForOpt);
   if (EnableForOpt)
     PM.add(createCodegenCleanupPass());
 }
 
-static void buildDefaultPollyPipeline(FunctionPassManager &PM,
-                                      PassBuilder::OptimizationLevel Level) {
-  bool EnableForOpt =
-      shouldEnablePollyForOptimization() && Level.isOptimizingForSpeed();
-  if (!shouldEnablePollyForDiagnostic() && !EnableForOpt)
-    return;
-
+/// Add the pass sequence required for Polly to the New Pass Manager.
+///
+/// @param PM           The pass manager itself.
+/// @param Level        The optimization level. Used for the cleanup of Polly's
+///                     output.
+/// @param EnableForOpt Whether to add Polly IR transformations. If False, only
+///                     the analysis passes are added, skipping Polly itself.
+///                     The IR may still be modified.
+static void buildCommonPollyPipeline(FunctionPassManager &PM,
+                                     OptimizationLevel Level,
+                                     bool EnableForOpt) {
   PassBuilder PB;
   ScopPassManager SPM;
 
@@ -480,12 +501,6 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
 
   // TODO add utility passes for the various command line options, once they're
   // ported
-  if (DumpBefore)
-    report_fatal_error("Option -polly-dump-before not supported with NPM",
-                       false);
-  if (!DumpBeforeFile.empty())
-    report_fatal_error("Option -polly-dump-before-file not supported with NPM",
-                       false);
 
   if (PollyDetectOnly) {
     // Don't add more passes other than the ScopPassManager's detection passes.
@@ -494,15 +509,18 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
   }
 
   if (PollyViewer)
-    report_fatal_error("Option -polly-show not supported with NPM", false);
+    llvm::report_fatal_error("Option -polly-show not supported with NPM",
+                             false);
   if (PollyOnlyViewer)
-    report_fatal_error("Option -polly-show-only not supported with NPM", false);
+    llvm::report_fatal_error("Option -polly-show-only not supported with NPM",
+                             false);
   if (PollyPrinter)
-    report_fatal_error("Option -polly-dot not supported with NPM", false);
+    llvm::report_fatal_error("Option -polly-dot not supported with NPM", false);
   if (PollyOnlyPrinter)
-    report_fatal_error("Option -polly-dot-only not supported with NPM", false);
+    llvm::report_fatal_error("Option -polly-dot-only not supported with NPM",
+                             false);
   if (EnablePolyhedralInfo)
-    report_fatal_error(
+    llvm::report_fatal_error(
         "Option -polly-enable-polyhedralinfo not supported with NPM", false);
 
   if (EnableSimplify)
@@ -521,8 +539,8 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
     SPM.addPass(DeadCodeElimPass());
 
   if (FullyIndexedStaticExpansion)
-    report_fatal_error("Option -polly-enable-mse not supported with NPM",
-                       false);
+    llvm::report_fatal_error("Option -polly-enable-mse not supported with NPM",
+                             false);
 
   if (EnablePruneUnprofitable)
     SPM.addPass(PruneUnprofitablePass());
@@ -538,7 +556,8 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
   }
 
   if (ExportJScop)
-    report_fatal_error("Option -polly-export not supported with NPM", false);
+    llvm::report_fatal_error("Option -polly-export not supported with NPM",
+                             false);
 
   if (!EnableForOpt)
     return;
@@ -547,8 +566,9 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
     switch (CodeGeneration) {
     case CODEGEN_AST:
       SPM.addPass(
-          RequireAnalysisPass<IslAstAnalysis, Scop, ScopAnalysisManager,
-                              ScopStandardAnalysisResults &, SPMUpdater &>());
+          llvm::RequireAnalysisPass<IslAstAnalysis, Scop, ScopAnalysisManager,
+                                    ScopStandardAnalysisResults &,
+                                    SPMUpdater &>());
       break;
     case CODEGEN_FULL:
       SPM.addPass(CodeGenerationPass());
@@ -559,28 +579,77 @@ static void buildDefaultPollyPipeline(FunctionPassManager &PM,
   }
 #ifdef GPU_CODEGEN
   else
-    report_fatal_error("Option -polly-target=gpu not supported for NPM", false);
+    llvm::report_fatal_error("Option -polly-target=gpu not supported for NPM",
+                             false);
 #endif
 
 #ifdef GPU_CODEGEN
   if (Target == TARGET_HYBRID)
-    report_fatal_error("Option -polly-target=hybrid not supported for NPM",
-                       false);
+    llvm::report_fatal_error(
+        "Option -polly-target=hybrid not supported for NPM", false);
 #endif
 
   PM.addPass(createFunctionToScopPassAdaptor(std::move(SPM)));
   PM.addPass(PB.buildFunctionSimplificationPipeline(
-      Level, ThinOrFullLTOPhase::None)); // Cleanup
-
-  if (DumpAfter)
-    report_fatal_error("Option -polly-dump-after not supported with NPM",
-                       false);
-  if (!DumpAfterFile.empty())
-    report_fatal_error("Option -polly-dump-after-file not supported with NPM",
-                       false);
+      Level, llvm::ThinOrFullLTOPhase::None)); // Cleanup
 
   if (CFGPrinter)
     PM.addPass(llvm::CFGPrinterPass());
+}
+
+static void buildEarlyPollyPipeline(llvm::ModulePassManager &MPM,
+                                    llvm::OptimizationLevel Level) {
+  bool EnableForOpt =
+      shouldEnablePollyForOptimization() && Level.isOptimizingForSpeed();
+  if (!shouldEnablePollyForDiagnostic() && !EnableForOpt)
+    return;
+
+  FunctionPassManager FPM = buildCanonicalicationPassesForNPM(MPM, Level);
+
+  if (DumpBefore || !DumpBeforeFile.empty()) {
+    MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+
+    if (DumpBefore)
+      MPM.addPass(DumpModulePass("-before", true));
+    for (auto &Filename : DumpBeforeFile)
+      MPM.addPass(DumpModulePass(Filename, false));
+
+    FPM = FunctionPassManager();
+  }
+
+  buildCommonPollyPipeline(FPM, Level, EnableForOpt);
+  MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+
+  if (DumpAfter)
+    MPM.addPass(DumpModulePass("-after", true));
+  for (auto &Filename : DumpAfterFile)
+    MPM.addPass(DumpModulePass(Filename, false));
+}
+
+static void buildLatePollyPipeline(FunctionPassManager &PM,
+                                   llvm::OptimizationLevel Level) {
+  bool EnableForOpt =
+      shouldEnablePollyForOptimization() && Level.isOptimizingForSpeed();
+  if (!shouldEnablePollyForDiagnostic() && !EnableForOpt)
+    return;
+
+  if (DumpBefore)
+    PM.addPass(DumpFunctionPass("-before"));
+  if (!DumpBeforeFile.empty())
+    llvm::report_fatal_error(
+        "Option -polly-dump-before-file at -polly-position=late "
+        "not supported with NPM",
+        false);
+
+  buildCommonPollyPipeline(PM, Level, EnableForOpt);
+
+  if (DumpAfter)
+    PM.addPass(DumpFunctionPass("-after"));
+  if (!DumpAfterFile.empty())
+    llvm::report_fatal_error(
+        "Option -polly-dump-after-file at -polly-position=late "
+        "not supported with NPM",
+        false);
 }
 
 /// Register Polly to be available as an optimizer
@@ -662,12 +731,12 @@ static void registerFunctionAnalyses(FunctionAnalysisManager &FAM,
 static bool
 parseFunctionPipeline(StringRef Name, FunctionPassManager &FPM,
                       ArrayRef<PassBuilder::PipelineElement> Pipeline) {
-  if (parseAnalysisUtilityPasses<OwningScopAnalysisManagerFunctionProxy>(
+  if (llvm::parseAnalysisUtilityPasses<OwningScopAnalysisManagerFunctionProxy>(
           "polly-scop-analyses", Name, FPM))
     return true;
 
 #define FUNCTION_ANALYSIS(NAME, CREATE_PASS)                                   \
-  if (parseAnalysisUtilityPasses<                                              \
+  if (llvm::parseAnalysisUtilityPasses<                                        \
           std::remove_reference<decltype(CREATE_PASS)>::type>(NAME, Name,      \
                                                               FPM))            \
     return true;
@@ -685,7 +754,7 @@ parseFunctionPipeline(StringRef Name, FunctionPassManager &FPM,
 static bool parseScopPass(StringRef Name, ScopPassManager &SPM,
                           PassInstrumentationCallbacks *PIC) {
 #define SCOP_ANALYSIS(NAME, CREATE_PASS)                                       \
-  if (parseAnalysisUtilityPasses<                                              \
+  if (llvm::parseAnalysisUtilityPasses<                                        \
           std::remove_reference<decltype(CREATE_PASS)>::type>(NAME, Name,      \
                                                               SPM))            \
     return true;
@@ -733,7 +802,8 @@ static bool isScopPassName(StringRef Name) {
 }
 
 static bool
-parseTopLevelPipeline(ModulePassManager &MPM, PassInstrumentationCallbacks *PIC,
+parseTopLevelPipeline(llvm::ModulePassManager &MPM,
+                      PassInstrumentationCallbacks *PIC,
                       ArrayRef<PassBuilder::PipelineElement> Pipeline) {
   std::vector<PassBuilder::PipelineElement> FullPipeline;
   StringRef FirstName = Pipeline.front().Name;
@@ -771,14 +841,23 @@ void registerPollyPasses(PassBuilder &PB) {
         return parseScopPipeline(Name, FPM, PIC, Pipeline);
       });
   PB.registerParseTopLevelPipelineCallback(
-      [PIC](ModulePassManager &MPM,
+      [PIC](llvm::ModulePassManager &MPM,
             ArrayRef<PassBuilder::PipelineElement> Pipeline) -> bool {
         return parseTopLevelPipeline(MPM, PIC, Pipeline);
       });
 
-  if (PassPosition != POSITION_BEFORE_VECTORIZER)
-    report_fatal_error("Option -polly-position not supported with NPM", false);
-  PB.registerVectorizerStartEPCallback(buildDefaultPollyPipeline);
+  switch (PassPosition) {
+  case POSITION_EARLY:
+    PB.registerPipelineStartEPCallback(buildEarlyPollyPipeline);
+    break;
+  case POSITION_AFTER_LOOPOPT:
+    llvm::report_fatal_error(
+        "Option -polly-position=after-loopopt not supported with NPM", false);
+    break;
+  case POSITION_BEFORE_VECTORIZER:
+    PB.registerVectorizerStartEPCallback(buildLatePollyPipeline);
+    break;
+  }
 }
 } // namespace polly
 

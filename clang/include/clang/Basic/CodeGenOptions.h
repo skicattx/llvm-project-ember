@@ -55,11 +55,12 @@ public:
   };
 
   enum VectorLibrary {
-    NoLibrary,  // Don't use any vector library.
-    Accelerate, // Use the Accelerate framework.
-    LIBMVEC,    // GLIBC vector math library.
-    MASSV,      // IBM MASS vector library.
-    SVML        // Intel short vector math library.
+    NoLibrary,         // Don't use any vector library.
+    Accelerate,        // Use the Accelerate framework.
+    LIBMVEC,           // GLIBC vector math library.
+    MASSV,             // IBM MASS vector library.
+    SVML,              // Intel short vector math library.
+    Darwin_libsystem_m // Use Darwin's libsytem_m vector functions.
   };
 
   enum ObjCDispatchMethodKind {
@@ -96,6 +97,11 @@ public:
     Embed_Marker    // Embed a marker as a placeholder for bitcode.
   };
 
+  enum InlineAsmDialectKind {
+    IAD_ATT,
+    IAD_Intel,
+  };
+
   // This field stores one of the allowed values for the option
   // -fbasic-block-sections=.  The allowed values with this option are:
   // {"labels", "all", "list=<file>", "none"}.
@@ -122,6 +128,13 @@ public:
     None,        // Omit all frame pointers.
     NonLeaf,     // Keep non-leaf frame pointers.
     All,         // Keep all frame pointers.
+  };
+
+  enum class SwiftAsyncFramePointerKind {
+    Auto, // Choose Swift async extended frame info based on deployment target.
+    Always, // Unconditionally emit Swift async extended frame info.
+    Never,  // Don't emit Swift async extended frame info.
+    Default = Always,
   };
 
   enum FiniteLoopsKind {
@@ -214,6 +227,9 @@ public:
   /// Output filename for the split debug info, not used in the skeleton CU.
   std::string SplitDwarfOutput;
 
+  /// Output filename used in the COFF debug information.
+  std::string ObjectFilenameForDebug;
+
   /// The name of the relocation model to use.
   llvm::Reloc::Model RelocationModel;
 
@@ -260,6 +276,11 @@ public:
   /// CUDA runtime back-end for incorporating them into host-side object file.
   std::string CudaGpuBinaryFileName;
 
+  /// List of filenames and section name pairs passed in using the
+  /// -fembed-offload-object option to embed device-side offloading objects into
+  /// the host as a named section. Input passed in as '<filename>,<section>'
+  std::vector<std::string> OffloadObjects;
+
   /// The name of the file to which the backend should save YAML optimization
   /// records.
   std::string OptRecordFile;
@@ -291,7 +312,7 @@ public:
     std::shared_ptr<llvm::Regex> Regex;
 
     /// By default, optimization remark is missing.
-    OptRemark() : Kind(RK_Missing), Pattern(""), Regex(nullptr) {}
+    OptRemark() : Kind(RK_Missing), Regex(nullptr) {}
 
     /// Returns true iff the optimization remark holds a valid regular
     /// expression.
@@ -363,8 +384,10 @@ public:
   /// other styles we may implement in the future.
   std::string StackProtectorGuard;
 
-  /// The TLS base register when StackProtectorGuard is "tls".
+  /// The TLS base register when StackProtectorGuard is "tls", or register used
+  /// to store the stack canary for "sysreg".
   /// On x86 this can be "fs" or "gs".
+  /// On AArch64 this can only be "sp_el0".
   std::string StackProtectorGuardReg;
 
   /// Path to ignorelist file specifying which objects
@@ -372,10 +395,15 @@ public:
   /// coverage pass should actually not be instrumented.
   std::vector<std::string> SanitizeCoverageIgnorelistFiles;
 
+  /// Name of the stack usage file (i.e., .su file) if user passes
+  /// -fstack-usage. If empty, it can be implied that -fstack-usage is not
+  /// passed on the command line.
+  std::string StackUsageOutput;
+
   /// Executable and command-line used to create a given CompilerInvocation.
   /// Most of the time this will be the full -cc1 command.
   const char *Argv0 = nullptr;
-  ArrayRef<const char *> CommandLineArgs;
+  std::vector<std::string> CommandLineArgs;
 
   /// The minimum hotness value a diagnostic needs in order to be included in
   /// optimization diagnostics.
@@ -443,6 +471,13 @@ public:
   /// Check if maybe unused type info should be emitted.
   bool hasMaybeUnusedDebugInfo() const {
     return getDebugInfo() >= codegenoptions::UnusedTypeInfo;
+  }
+
+  // Check if any one of SanitizeCoverage* is enabled.
+  bool hasSanitizeCoverage() const {
+    return SanitizeCoverageType || SanitizeCoverageIndirectCalls ||
+           SanitizeCoverageTraceCmp || SanitizeCoverageTraceLoads ||
+           SanitizeCoverageTraceStores;
   }
 };
 

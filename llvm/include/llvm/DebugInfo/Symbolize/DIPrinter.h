@@ -14,9 +14,10 @@
 #ifndef LLVM_DEBUGINFO_SYMBOLIZE_DIPRINTER_H
 #define LLVM_DEBUGINFO_SYMBOLIZE_DIPRINTER_H
 
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/JSON.h"
-#include <string>
+#include <memory>
 #include <vector>
 
 namespace llvm {
@@ -29,6 +30,8 @@ class raw_ostream;
 
 namespace symbolize {
 
+class SourceCode;
+
 struct Request {
   StringRef ModuleName;
   Optional<uint64_t> Address;
@@ -36,8 +39,8 @@ struct Request {
 
 class DIPrinter {
 public:
-  DIPrinter() {}
-  virtual ~DIPrinter() {}
+  DIPrinter() = default;
+  virtual ~DIPrinter() = default;
 
   virtual void print(const Request &Request, const DILineInfo &Info) = 0;
   virtual void print(const Request &Request, const DIInliningInfo &Info) = 0;
@@ -74,8 +77,9 @@ protected:
   void printFunctionName(StringRef FunctionName, bool Inlined);
   virtual void printSimpleLocation(StringRef Filename,
                                    const DILineInfo &Info) = 0;
-  void printContext(StringRef FileName, int64_t Line);
+  void printContext(SourceCode SourceCode);
   void printVerbose(StringRef Filename, const DILineInfo &Info);
+  virtual void printStartAddress(const DILineInfo &Info) {}
   virtual void printFooter() {}
 
 private:
@@ -83,7 +87,7 @@ private:
 
 public:
   PlainPrinterBase(raw_ostream &OS, raw_ostream &ES, PrinterConfig &Config)
-      : DIPrinter(), OS(OS), ES(ES), Config(Config) {}
+      : OS(OS), ES(ES), Config(Config) {}
 
   void print(const Request &Request, const DILineInfo &Info) override;
   void print(const Request &Request, const DIInliningInfo &Info) override;
@@ -103,6 +107,7 @@ public:
 class LLVMPrinter : public PlainPrinterBase {
 private:
   void printSimpleLocation(StringRef Filename, const DILineInfo &Info) override;
+  void printStartAddress(const DILineInfo &Info) override;
   void printFooter() override;
 
 public:
@@ -133,7 +138,7 @@ private:
 
 public:
   JSONPrinter(raw_ostream &OS, PrinterConfig &Config)
-      : DIPrinter(), OS(OS), Config(Config) {}
+      : OS(OS), Config(Config) {}
 
   void print(const Request &Request, const DILineInfo &Info) override;
   void print(const Request &Request, const DIInliningInfo &Info) override;

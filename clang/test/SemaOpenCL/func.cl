@@ -1,6 +1,6 @@
-// RUN: %clang_cc1 %s -verify -pedantic -fsyntax-only -triple spir-unknown-unknown
-// RUN: %clang_cc1 %s -verify -pedantic -fsyntax-only -triple spir-unknown-unknown -DFUNCPTREXT
-// RUN: %clang_cc1 %s -verify -pedantic -fsyntax-only -triple spir-unknown-unknown -DVARARGEXT
+// RUN: %clang_cc1 %s -cl-std=CL1.0 -verify -pedantic -fsyntax-only -triple spir-unknown-unknown
+// RUN: %clang_cc1 %s -cl-std=CL1.0 -verify -pedantic -fsyntax-only -triple spir-unknown-unknown -DFUNCPTREXT
+// RUN: %clang_cc1 %s -cl-std=CL1.0 -verify -pedantic -fsyntax-only -triple spir-unknown-unknown -DVARARGEXT
 
 #ifdef FUNCPTREXT
 #pragma OPENCL EXTENSION __cl_clang_function_pointers : enable
@@ -43,9 +43,9 @@ void foo(void*);
 #endif
 
 // Expect no diagnostics for an empty parameter list.
-void bar();
+void bar(); // expected-warning {{a function declaration without a prototype is deprecated in all versions of C}}
 
-void bar()
+void bar() // expected-warning {{a function declaration without a prototype is deprecated in all versions of C}}
 {
   // declaring a function pointer is an error
   void (*fptr)(int);

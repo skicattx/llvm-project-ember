@@ -15,9 +15,8 @@
 using namespace llvm;
 
 AMDGPUMachineFunction::AMDGPUMachineFunction(const MachineFunction &MF)
-    : MachineFunctionInfo(), Mode(MF.getFunction()),
-      IsEntryFunction(
-          AMDGPU::isEntryFunctionCC(MF.getFunction().getCallingConv())),
+    : Mode(MF.getFunction()), IsEntryFunction(AMDGPU::isEntryFunctionCC(
+                                  MF.getFunction().getCallingConv())),
       IsModuleEntryFunction(
           AMDGPU::isModuleEntryFunctionCC(MF.getFunction().getCallingConv())),
       NoSignedZerosFPMath(MF.getTarget().Options.NoSignedZerosFPMath) {
@@ -64,7 +63,7 @@ unsigned AMDGPUMachineFunction::allocateLDSGlobal(const DataLayout &DL,
 
 void AMDGPUMachineFunction::allocateModuleLDSGlobal(const Module *M) {
   if (isModuleEntryFunction()) {
-    GlobalVariable *GV = M->getGlobalVariable("llvm.amdgcn.module.lds");
+    const GlobalVariable *GV = M->getNamedGlobal("llvm.amdgcn.module.lds");
     if (GV) {
       unsigned Offset = allocateLDSGlobal(M->getDataLayout(), *GV);
       (void)Offset;
