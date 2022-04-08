@@ -1,12 +1,9 @@
-//===- EMBERRegisterInfo.h - EMBER Register Information Impl ------*- C++ -*-===//
-//
-// Copyright (c) 2021 IARI Ventures, LLC. All rights reserved.
-//
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 //
 // This file contains the EMBER implementation of the TargetRegisterInfo class.
+// Copyright (c) 2022 IARI Ventures, LLC. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 
 #ifndef LLVM_LIB_TARGET_MIPS_MIPSREGISTERINFO_H
 #define LLVM_LIB_TARGET_MIPS_MIPSREGISTERINFO_H
@@ -60,12 +57,12 @@ public:
   Register getFrameRegister(const MachineFunction &MF) const override;
 
   /// Return GPR register class.
-  virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
+//  virtual const TargetRegisterClass *intRegClass(unsigned Size) const = 0;
 
 private:
-  virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,
-                           int FrameIndex, uint64_t StackSize,
-                           int64_t SPOffset) const = 0;
+//   virtual void eliminateFI(MachineBasicBlock::iterator II, unsigned OpNo,
+//                            int FrameIndex, uint64_t StackSize,
+//                            int64_t SPOffset) const = 0;
 };
 
 } // end namespace llvm

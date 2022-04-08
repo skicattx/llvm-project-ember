@@ -1,14 +1,11 @@
-//===- EMBERRegisterInfo.cpp - EMBER Register Information -------------------===//
-//
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
-// See https://llvm.org/LICENSE.txt for license information.
-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-//
-//===----------------------------------------------------------------------===//
+//======================================================================================================================
 //
 // This file contains the EMBER implementation of the TargetRegisterInfo class.
+// Copyright (c) 2022 IARI Ventures, LLC. All rights reserved.
 //
-//===----------------------------------------------------------------------===//
+// NOTE: A lot of the stubs and overloads in this class are for future HLL support
+//======================================================================================================================
+
 
 #include "EMBERRegisterInfo.h"
 #include "EMBER.h"
@@ -42,17 +39,7 @@ EMBERRegisterInfo::EMBERRegisterInfo() : EMBERGenRegisterInfo(EMBER::R0) {}
 const TargetRegisterClass *
 EMBERRegisterInfo::getPointerRegClass(const MachineFunction &MF,
                                      unsigned Kind) const {
-//  EMBERABIInfo ABI = MF.getSubtarget<EMBERSubtarget>().getABI();
-  EMBERPtrClass PtrClassKind = static_cast<EMBERPtrClass>(Kind);
-
-  switch (PtrClassKind) {
-  case EMBERPtrClass::Default:
     return &EMBER::GPR32RegClass;
-  case EMBERPtrClass::StackPointer:
-    return &EMBER::SP32RegClass;
-  }
-
-  llvm_unreachable("Unknown pointer kind");
 }
 
 unsigned
@@ -92,10 +79,6 @@ EMBERRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
   return 0;//::GPR32;
 }
 
-// const uint32_t *EMBERRegisterInfo::getEMBER16RetHelperMask() {
-//   return CSR_EMBER16RetHelper_RegMask;
-// }
-
 BitVector EMBERRegisterInfo::
 getReservedRegs(const MachineFunction &MF) const {
   static const MCPhysReg ReservedGPR32[] = { 
@@ -119,8 +102,7 @@ EMBERRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
 // FrameIndex represent objects inside a abstract stack.
 // We must replace FrameIndex with an stack/frame pointer
 // direct reference.
-void EMBERRegisterInfo::
-eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
+void EMBERRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
                     unsigned FIOperandNum, RegScavenger *RS) const {
   MachineInstr &MI = *II;
   MachineFunction &MF = *MI.getParent()->getParent();
@@ -140,7 +122,7 @@ eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
                     << DebugStr(MF.getFrameInfo().getObjectAlign(FrameIndex))
                     << "\n");
 
-  eliminateFI(MI, FIOperandNum, FrameIndex, stackSize, spOffset);
+  //  eliminateFI(MI, FIOperandNum, FrameIndex, stackSize, spOffset);
 }
 
 Register EMBERRegisterInfo::

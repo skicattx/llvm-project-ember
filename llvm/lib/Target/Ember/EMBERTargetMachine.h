@@ -29,8 +29,8 @@ public:
                      CodeGenOpt::Level OL, bool JIT);
   ~EMBERTargetMachine() override;
 
-  const EMBERSubtarget *getSubtargetImpl() const { return &Subtarget; }
-  const EMBERSubtarget *getSubtargetImpl(const Function &) const override;
+  const EMBERSubtarget *getSubtargetImpl(const Function &) const override { return &Subtarget; }
+  const EMBERSubtarget *getSubtargetImpl() const = delete;
 
   // Pass Pipeline Configuration
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;

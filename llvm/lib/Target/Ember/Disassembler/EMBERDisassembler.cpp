@@ -49,10 +49,10 @@ static MCDisassembler *createEMBERDisassembler(const Target &T,
   return new EMBERDisassembler(STI, Ctx, T.createMCInstrInfo());
 }
 
-extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERDisassembler() {
-  // Register the disassembler for each target.
-  TargetRegistry::RegisterMCDisassembler(getTheEMBER32Target(),
-                                         createEMBERDisassembler);
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeEMBERDisassembler() 
+{
+    // Register the disassembler for each target.
+    TargetRegistry::RegisterMCDisassembler(getTheEMBER32Target(), createEMBERDisassembler);
 }
 
 
@@ -354,6 +354,13 @@ static DecodeStatus decodeRVCInstrRdRs1Rs2(MCInst &Inst, unsigned Insn,
                                            const void *Decoder);
 */
 static DecodeStatus DecodeGPR32RegisterClass(MCInst &Inst, unsigned RegNo,
+                                             uint64_t Addr,
+                                             const void *Decoder)
+{
+  return MCDisassembler::Fail;
+}
+
+static DecodeStatus DecodeSYS32RegisterClass(MCInst &Inst, unsigned RegNo,
                                              uint64_t Addr,
                                              const void *Decoder)
 {

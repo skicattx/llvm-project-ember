@@ -17,6 +17,7 @@ target_link_libraries(lld
   lldMachO
   lldMinGW
   lldWasm
+  LLVMEmberCodeGen
   )
 
 install(TARGETS lld

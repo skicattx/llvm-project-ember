@@ -18,6 +18,7 @@ add_lld_library(lldELF
   Arch/MSP430.cpp
   Arch/PPC.cpp
   Arch/PPC64.cpp
+  Arch/EMBER.cpp
   Arch/RISCV.cpp
   Arch/SPARCV9.cpp
   Arch/X86.cpp
@@ -48,6 +49,7 @@ add_lld_library(lldELF
 
   LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
+  ${LLVM_EXPERIMENTAL_TARGETS_TO_BUILD}
   BinaryFormat
   BitWriter
   Core

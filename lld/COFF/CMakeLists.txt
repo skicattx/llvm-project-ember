@@ -24,6 +24,7 @@ add_lld_library(lldCOFF
 
   LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
+  ${LLVM_EXPERIMENTAL_TARGETS_TO_BUILD}
   BinaryFormat
   Core
   DebugInfoCodeView

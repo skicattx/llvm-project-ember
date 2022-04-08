@@ -59,7 +59,7 @@ EMBERSubtarget::EMBERSubtarget(const Triple &TT, StringRef CPU, StringRef FS, co
     EMBERGenSubtargetInfo(TT, CPU, CPU, FS), 
     TM(TM),
     TSInfo(), 
-    InstrInfo(EMBERInstrInfo::create( initializeSubtargetDependencies(CPU, FS, TM)))
+    InstrInfo(new EMBERInstrInfo(*this))
 {
 }
 

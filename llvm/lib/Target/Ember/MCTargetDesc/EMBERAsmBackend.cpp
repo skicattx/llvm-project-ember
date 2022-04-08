@@ -31,9 +31,9 @@ Optional<MCFixupKind> EMBERAsmBackend::getFixupKind(StringRef Name) const
 #include "llvm/BinaryFormat/ELFRelocs/EMBER.def"
 #undef ELF_RELOC
             .Case("BFD_RELOC_NONE", ELF::R_EMBER_NONE)
-            .Case("BFD_RELOC_MIPS_JMP", ELF::R_EMBER_BRANCH) // ignore top 3 bits
-            .Case("BFD_RELOC_LO16", ELF::R_EMBER_LDI_LABEL_ADDR_LO)
-            .Case("BFD_RELOC_HI16", ELF::R_EMBER_LDI_LABEL_ADDR_HI)
+//            .Case("BFD_RELOC_MIPS_JMP", ELF::R_EMBER_BRANCH) // ignore top 3 bits
+//            .Case("BFD_RELOC_LO16", ELF::R_EMBER_LDI_LABEL_ADDR_LO)
+//            .Case("BFD_RELOC_HI16", ELF::R_EMBER_LDI_LABEL_ADDR_HI)
             .Default(-1u);
         if (Type != -1u)
             return static_cast<MCFixupKind>(FirstLiteralRelocationKind + Type);
@@ -195,9 +195,9 @@ bool EMBERAsmBackend::evaluateTargetFixup(
     if (!Writer)
         return true;
 
-    bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
-    if (!IsResolved)
-        return false;
+//    bool IsResolved = Writer->isSymbolRefDifferenceFullyResolvedImpl(Asm, SA, *DF, false, true);
+//     if (!IsResolved)
+//         return false;
 
     Value = Layout.getSymbolOffset(SA) + Target.getConstant();
 
@@ -205,10 +205,17 @@ bool EMBERAsmBackend::evaluateTargetFixup(
     {
         default:
             llvm_unreachable("Unexpected fixup kind!");
-        case EMBER::fixup_ember_branch:
+        case EMBER::fixup_ember_branch: 
+        {
             Value -= Layout.getFragmentOffset(DF) + Fixup.getOffset();
-            Value = ((int64_t)Value)>>2;
-            return true;    // Relative jumps should be OK? (at least in the same segment?)
+            Value = ((int64_t)Value) >> 2;
+
+            // Mask the bits (for negative nunmbers)
+            const MCFixupKindInfo &kindInfo = getFixupKindInfo(Fixup.getKind()); 
+            uint64_t mask = 0xFFFFFFFF >> (32 - kindInfo.TargetSize);
+            Value &= mask;
+            return true; // Relative jumps should be OK? (at least in the same segment?)
+        }
         case EMBER::fixup_ember_ldi_label_addr_lo:
             return false;   // This will need to be fixed again in the linker
         case EMBER::fixup_ember_ldi_label_addr_hi:
@@ -254,7 +261,7 @@ void EMBERAsmBackend::applyFixup(
         Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
     }
 
-    IsResolved = true;
+//    IsResolved = true;
 }
 
 

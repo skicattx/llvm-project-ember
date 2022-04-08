@@ -35,24 +35,25 @@ class TargetRegisterInfo;
 class EMBERInstrInfo : public EMBERGenInstrInfo 
 {
     virtual void anchor();
+    EMBERRegisterInfo RI;
 
 protected:
     const EMBERSubtarget &Subtarget;
-    unsigned UncondBrOpc;
+//    unsigned UncondBrOpc;
 
 public:
-    explicit EMBERInstrInfo(const EMBERSubtarget &STI, unsigned UncondBrOpc);
+    explicit EMBERInstrInfo(const EMBERSubtarget &STI);
 
-    static const EMBERInstrInfo *create(EMBERSubtarget &STI);
+//     static const EMBERInstrInfo *create(EMBERSubtarget &STI);
 
     /// getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
     /// such, whenever a client has an instance of instruction info, it should
     /// always be able to get register info as well (through this method).
-    virtual const EMBERRegisterInfo &getRegisterInfo() const = 0;
+    const EMBERRegisterInfo &getRegisterInfo() const { return RI; }
 };
 
 /// Create EMBERInstrInfo objects.
-const EMBERInstrInfo *createEMBERSEInstrInfo(const EMBERSubtarget &STI);
+// const EMBERInstrInfo *createEMBERInstrInfo(const EMBERSubtarget &STI);
 
 } // end namespace llvm
 
