@@ -8,7 +8,7 @@
 
 #include "DWARFDebugInfoEntry.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include <algorithm>
 
@@ -31,7 +31,7 @@
 #include "SymbolFileDWARFDwo.h"
 
 using namespace lldb_private;
-using namespace std;
+using namespace lldb_private::dwarf;
 extern int g_verbose;
 
 // Extract a debug info entry for a given DWARFUnit from the data
@@ -214,11 +214,12 @@ static DWARFRangeList GetRangesOrReportError(DWARFUnit &unit,
   if (expected_ranges)
     return std::move(*expected_ranges);
   unit.GetSymbolFileDWARF().GetObjectFile()->GetModule()->ReportError(
-      "{0x%8.8x}: DIE has DW_AT_ranges(0x%" PRIx64 ") attribute, but "
+      "{0x%8.8x}: DIE has DW_AT_ranges(%s 0x%" PRIx64 ") attribute, but "
       "range extraction failed (%s), please file a bug "
       "and attach the file at the start of this error message",
-      die.GetOffset(), value.Unsigned(),
-      toString(expected_ranges.takeError()).c_str());
+      die.GetOffset(),
+      llvm::dwarf::FormEncodingString(value.Form()).str().c_str(),
+      value.Unsigned(), toString(expected_ranges.takeError()).c_str());
   return DWARFRangeList();
 }
 

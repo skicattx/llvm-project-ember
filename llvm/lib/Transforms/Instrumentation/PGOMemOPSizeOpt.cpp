@@ -29,7 +29,6 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstVisitor.h"
-#include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
@@ -46,7 +45,6 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
-#include "llvm/Support/WithColor.h"
 #include "llvm/Transforms/Instrumentation.h"
 #include "llvm/Transforms/Instrumentation/PGOInstrumentation.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -541,7 +539,6 @@ PreservedAnalyses PGOMemOPSizeOpt::run(Function &F,
   if (!Changed)
     return PreservedAnalyses::all();
   auto PA = PreservedAnalyses();
-  PA.preserve<GlobalsAA>();
   PA.preserve<DominatorTreeAnalysis>();
   return PA;
 }

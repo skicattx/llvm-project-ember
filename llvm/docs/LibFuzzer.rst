@@ -8,7 +8,7 @@ libFuzzer – a library for coverage-guided fuzz testing.
 Introduction
 ============
 
-LibFuzzer is in-process, coverage-guided, evolutionary fuzzing engine.
+LibFuzzer is an in-process, coverage-guided, evolutionary fuzzing engine.
 
 LibFuzzer is linked with the library under test, and feeds fuzzed inputs to the
 library via a specific fuzzing entrypoint (aka "target function"); the fuzzer
@@ -673,9 +673,9 @@ Developing libFuzzer
 
 LibFuzzer is built as a part of LLVM project by default on macos and Linux.
 Users of other operating systems can explicitly request compilation using
-``-DLIBFUZZER_ENABLE=YES`` flag.
+``-DCOMPILER_RT_BUILD_LIBFUZZER=ON`` flag.
 Tests are run using ``check-fuzzer`` target from the build directory
-which was configured with ``-DLIBFUZZER_ENABLE_TESTS=ON`` flag.
+which was configured with ``-DCOMPILER_RT_INCLUDE_TESTS=ON`` flag.
 
 .. code-block:: console
 

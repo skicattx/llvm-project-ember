@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// UNSUPPORTED: apple-clang-9, apple-clang-10, apple-clang-11, apple-clang-12.0.0
 
 // <compare>
 
@@ -49,6 +48,17 @@ void test_signatures() {
   ASSERT_NOEXCEPT(Eq <=> 0);
   ASSERT_SAME_TYPE(decltype(Eq <=> 0), std::strong_ordering);
   ASSERT_SAME_TYPE(decltype(0 <=> Eq), std::strong_ordering);
+#endif
+}
+
+constexpr void test_equality() {
+#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+  auto& StrongEq = std::strong_ordering::equal;
+  auto& PartialEq = std::partial_ordering::equivalent;
+  assert(StrongEq == PartialEq);
+
+  auto& WeakEq = std::weak_ordering::equivalent;
+  assert(StrongEq == WeakEq);
 #endif
 }
 
@@ -175,6 +185,8 @@ constexpr bool test_constexpr() {
     static_assert(std::strong_ordering::greater ==
                   std::strong_ordering::greater);
   }
+
+  test_equality();
 #endif
 
   return true;
@@ -183,6 +195,7 @@ constexpr bool test_constexpr() {
 int main(int, char**) {
   test_static_members();
   test_signatures();
+  test_equality();
   static_assert(test_conversion(), "conversion test failed");
   static_assert(test_constexpr(), "constexpr test failed");
 

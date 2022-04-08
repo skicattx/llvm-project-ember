@@ -9,11 +9,11 @@
 #ifndef FORTRAN_RUNTIME_TOOLS_H_
 #define FORTRAN_RUNTIME_TOOLS_H_
 
-#include "cpp-type.h"
-#include "descriptor.h"
-#include "memory.h"
 #include "terminator.h"
 #include "flang/Common/long-double.h"
+#include "flang/Runtime/cpp-type.h"
+#include "flang/Runtime/descriptor.h"
+#include "flang/Runtime/memory.h"
 #include <functional>
 #include <map>
 #include <type_traits>
@@ -56,6 +56,15 @@ void CheckConformability(const Descriptor &to, const Descriptor &x,
     Terminator &, const char *funcName, const char *toName,
     const char *fromName);
 
+// Helper to store integer value in result[at].
+template <int KIND> struct StoreIntegerAt {
+  void operator()(const Fortran::runtime::Descriptor &result, std::size_t at,
+      std::int64_t value) const {
+    *result.ZeroBasedIndexedElement<Fortran::runtime::CppTypeFor<
+        Fortran::common::TypeCategory::Integer, KIND>>(at) = value;
+  }
+};
+
 // Validate a KIND= argument
 void CheckIntegerKind(Terminator &, int kind, const char *intrinsic);
 
@@ -66,7 +75,8 @@ inline void PutContiguousConverted(TO *to, FROM *from, std::size_t count) {
   }
 }
 
-static inline std::int64_t GetInt64(const char *p, std::size_t bytes) {
+static inline std::int64_t GetInt64(
+    const char *p, std::size_t bytes, Terminator &terminator) {
   switch (bytes) {
   case 1:
     return *reinterpret_cast<const CppTypeFor<TypeCategory::Integer, 1> *>(p);
@@ -77,8 +87,7 @@ static inline std::int64_t GetInt64(const char *p, std::size_t bytes) {
   case 8:
     return *reinterpret_cast<const CppTypeFor<TypeCategory::Integer, 8> *>(p);
   default:
-    Terminator{__FILE__, __LINE__}.Crash(
-        "GetInt64: no case for %zd bytes", bytes);
+    terminator.Crash("GetInt64: no case for %zd bytes", bytes);
   }
 }
 
@@ -87,18 +96,116 @@ inline bool SetInteger(INT &x, int kind, std::int64_t value) {
   switch (kind) {
   case 1:
     reinterpret_cast<CppTypeFor<TypeCategory::Integer, 1> &>(x) = value;
-    return true;
+    return value == reinterpret_cast<CppTypeFor<TypeCategory::Integer, 1> &>(x);
   case 2:
     reinterpret_cast<CppTypeFor<TypeCategory::Integer, 2> &>(x) = value;
-    return true;
+    return value == reinterpret_cast<CppTypeFor<TypeCategory::Integer, 2> &>(x);
   case 4:
     reinterpret_cast<CppTypeFor<TypeCategory::Integer, 4> &>(x) = value;
-    return true;
+    return value == reinterpret_cast<CppTypeFor<TypeCategory::Integer, 4> &>(x);
   case 8:
     reinterpret_cast<CppTypeFor<TypeCategory::Integer, 8> &>(x) = value;
-    return true;
+    return value == reinterpret_cast<CppTypeFor<TypeCategory::Integer, 8> &>(x);
   default:
     return false;
+  }
+}
+
+// Maps intrinsic runtime type category and kind values to the appropriate
+// instantiation of a function object template and calls it with the supplied
+// arguments.
+template <template <TypeCategory, int> class FUNC, typename RESULT,
+    typename... A>
+inline RESULT ApplyType(
+    TypeCategory cat, int kind, Terminator &terminator, A &&...x) {
+  switch (cat) {
+  case TypeCategory::Integer:
+    switch (kind) {
+    case 1:
+      return FUNC<TypeCategory::Integer, 1>{}(std::forward<A>(x)...);
+    case 2:
+      return FUNC<TypeCategory::Integer, 2>{}(std::forward<A>(x)...);
+    case 4:
+      return FUNC<TypeCategory::Integer, 4>{}(std::forward<A>(x)...);
+    case 8:
+      return FUNC<TypeCategory::Integer, 8>{}(std::forward<A>(x)...);
+#ifdef __SIZEOF_INT128__
+    case 16:
+      return FUNC<TypeCategory::Integer, 16>{}(std::forward<A>(x)...);
+#endif
+    default:
+      terminator.Crash("unsupported INTEGER(KIND=%d)", kind);
+    }
+  case TypeCategory::Real:
+    switch (kind) {
+#if 0 // TODO: REAL(2 & 3)
+    case 2:
+      return FUNC<TypeCategory::Real, 2>{}(std::forward<A>(x)...);
+    case 3:
+      return FUNC<TypeCategory::Real, 3>{}(std::forward<A>(x)...);
+#endif
+    case 4:
+      return FUNC<TypeCategory::Real, 4>{}(std::forward<A>(x)...);
+    case 8:
+      return FUNC<TypeCategory::Real, 8>{}(std::forward<A>(x)...);
+#if LONG_DOUBLE == 80
+    case 10:
+      return FUNC<TypeCategory::Real, 10>{}(std::forward<A>(x)...);
+#elif LONG_DOUBLE == 128
+    case 16:
+      return FUNC<TypeCategory::Real, 16>{}(std::forward<A>(x)...);
+#endif
+    default:
+      terminator.Crash("unsupported REAL(KIND=%d)", kind);
+    }
+  case TypeCategory::Complex:
+    switch (kind) {
+#if 0 // TODO: COMPLEX(2 & 3)
+    case 2:
+      return FUNC<TypeCategory::Complex, 2>{}(std::forward<A>(x)...);
+    case 3:
+      return FUNC<TypeCategory::Complex, 3>{}(std::forward<A>(x)...);
+#endif
+    case 4:
+      return FUNC<TypeCategory::Complex, 4>{}(std::forward<A>(x)...);
+    case 8:
+      return FUNC<TypeCategory::Complex, 8>{}(std::forward<A>(x)...);
+#if LONG_DOUBLE == 80
+    case 10:
+      return FUNC<TypeCategory::Complex, 10>{}(std::forward<A>(x)...);
+#elif LONG_DOUBLE == 128
+    case 16:
+      return FUNC<TypeCategory::Complex, 16>{}(std::forward<A>(x)...);
+#endif
+    default:
+      terminator.Crash("unsupported COMPLEX(KIND=%d)", kind);
+    }
+  case TypeCategory::Character:
+    switch (kind) {
+    case 1:
+      return FUNC<TypeCategory::Character, 1>{}(std::forward<A>(x)...);
+    case 2:
+      return FUNC<TypeCategory::Character, 2>{}(std::forward<A>(x)...);
+    case 4:
+      return FUNC<TypeCategory::Character, 4>{}(std::forward<A>(x)...);
+    default:
+      terminator.Crash("unsupported CHARACTER(KIND=%d)", kind);
+    }
+  case TypeCategory::Logical:
+    switch (kind) {
+    case 1:
+      return FUNC<TypeCategory::Logical, 1>{}(std::forward<A>(x)...);
+    case 2:
+      return FUNC<TypeCategory::Logical, 2>{}(std::forward<A>(x)...);
+    case 4:
+      return FUNC<TypeCategory::Logical, 4>{}(std::forward<A>(x)...);
+    case 8:
+      return FUNC<TypeCategory::Logical, 8>{}(std::forward<A>(x)...);
+    default:
+      terminator.Crash("unsupported LOGICAL(KIND=%d)", kind);
+    }
+  default:
+    terminator.Crash("unsupported type category(%d)", static_cast<int>(cat));
   }
 }
 
@@ -179,6 +286,69 @@ inline RESULT ApplyLogicalKind(int kind, Terminator &terminator, A &&...x) {
     terminator.Crash("unsupported LOGICAL(KIND=%d)", kind);
   }
 }
+
+// Calculate result type of (X op Y) for *, //, DOT_PRODUCT, &c.
+std::optional<std::pair<TypeCategory, int>> inline constexpr GetResultType(
+    TypeCategory xCat, int xKind, TypeCategory yCat, int yKind) {
+  int maxKind{std::max(xKind, yKind)};
+  switch (xCat) {
+  case TypeCategory::Integer:
+    switch (yCat) {
+    case TypeCategory::Integer:
+      return std::make_pair(TypeCategory::Integer, maxKind);
+    case TypeCategory::Real:
+    case TypeCategory::Complex:
+      return std::make_pair(yCat, yKind);
+    default:
+      break;
+    }
+    break;
+  case TypeCategory::Real:
+    switch (yCat) {
+    case TypeCategory::Integer:
+      return std::make_pair(TypeCategory::Real, xKind);
+    case TypeCategory::Real:
+    case TypeCategory::Complex:
+      return std::make_pair(yCat, maxKind);
+    default:
+      break;
+    }
+    break;
+  case TypeCategory::Complex:
+    switch (yCat) {
+    case TypeCategory::Integer:
+      return std::make_pair(TypeCategory::Complex, xKind);
+    case TypeCategory::Real:
+    case TypeCategory::Complex:
+      return std::make_pair(TypeCategory::Complex, maxKind);
+    default:
+      break;
+    }
+    break;
+  case TypeCategory::Character:
+    if (yCat == TypeCategory::Character) {
+      return std::make_pair(TypeCategory::Character, maxKind);
+    } else {
+      return std::nullopt;
+    }
+  case TypeCategory::Logical:
+    if (yCat == TypeCategory::Logical) {
+      return std::make_pair(TypeCategory::Logical, maxKind);
+    } else {
+      return std::nullopt;
+    }
+  default:
+    break;
+  }
+  return std::nullopt;
+}
+
+// Accumulate floating-point results in (at least) double precision
+template <TypeCategory CAT, int KIND>
+using AccumulationType = CppTypeFor<CAT,
+    CAT == TypeCategory::Real || CAT == TypeCategory::Complex
+        ? std::max(KIND, static_cast<int>(sizeof(double)))
+        : KIND>;
 
 } // namespace Fortran::runtime
 #endif // FORTRAN_RUNTIME_TOOLS_H_

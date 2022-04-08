@@ -1,77 +1,83 @@
 // RUN: echo "GPU binary would be here" > %t
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=8.0 -fcuda-include-gpubinary %t -o - \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s \
 // RUN:       --check-prefixes=ALL,LNX,NORDC,CUDA,CUDANORDC,CUDA-OLD
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=8.0  -fcuda-include-gpubinary %t \
 // RUN:     -o - -DNOGLOBALS \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s \
 // RUN:     -check-prefixes=NOGLOBALS,CUDANOGLOBALS
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=8.0 -fgpu-rdc -fcuda-include-gpubinary %t \
 // RUN:     -o - \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s \
 // RUN:       --check-prefixes=ALL,LNX,RDC,CUDA,CUDARDC,CUDA-OLD
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=8.0 -o - \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s -check-prefix=NOGPUBIN
 
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s       \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s       \
 // RUN:     -target-sdk-version=9.2 -fcuda-include-gpubinary %t -o - \
 // RUN:   | FileCheck %s -allow-deprecated-dag-overlap \
 // RUN:       --check-prefixes=ALL,LNX,NORDC,CUDA,CUDANORDC,CUDA-NEW
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=9.2 -fcuda-include-gpubinary %t -o -  -DNOGLOBALS \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s \
 // RUN:       --check-prefixes=NOGLOBALS,CUDANOGLOBALS
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=9.2 -fgpu-rdc -fcuda-include-gpubinary %t -o - \
 // RUN:   | FileCheck %s -allow-deprecated-dag-overlap \
 // RUN:       --check-prefixes=ALL,LNX,RDC,CUDA,CUDARDC,CUDA-NEW
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s -std=c++17 \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s -std=c++17 \
 // RUN:     -target-sdk-version=9.2 -fcuda-include-gpubinary %t -o - \
 // RUN:   | FileCheck %s -allow-deprecated-dag-overlap \
 // RUN:       --check-prefixes=ALL,LNX,NORDC,CUDA,CUDANORDC,CUDA-NEW,LNX_17,NORDC17
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s -std=c++17 \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s -std=c++17 \
 // RUN:     -target-sdk-version=9.2 -fgpu-rdc -fcuda-include-gpubinary %t -o - \
 // RUN:   | FileCheck %s -allow-deprecated-dag-overlap \
 // RUN:       --check-prefixes=ALL,LNX,RDC,CUDA,CUDARDC,CUDA-NEW,LNX_17,RDC17
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -target-sdk-version=9.2 -o - \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s -check-prefix=NOGPUBIN
 
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -fcuda-include-gpubinary %t -o - -x hip\
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s --check-prefixes=ALL,LNX,NORDC,HIP,HIPEF
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -fcuda-include-gpubinary %t -o -  -DNOGLOBALS -x hip \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s -check-prefixes=NOGLOBALS,HIPNOGLOBALS
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s \
 // RUN:     -fgpu-rdc -fcuda-include-gpubinary %t -o - -x hip \
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s --check-prefixes=ALL,LNX,RDC,HIP,HIPEF
-// RUN: %clang_cc1 -triple x86_64-linux-gnu -emit-llvm %s -o - -x hip\
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-linux-gnu -emit-llvm %s -o - -x hip\
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s -check-prefixes=ALL,LNX,NORDC,HIP,HIPNEF
 
-// RUN: %clang_cc1 -triple x86_64-pc-windows-msvc -aux-triple amdgcn -emit-llvm %s \
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-pc-windows-msvc -aux-triple amdgcn -emit-llvm %s \
 // RUN:     -fcuda-include-gpubinary %t -o - -x hip\
 // RUN:   | FileCheck -allow-deprecated-dag-overlap %s --check-prefixes=ALL,WIN
 
+// RUN: %clang_cc1 -no-opaque-pointers -triple x86_64-pc-windows-msvc -aux-triple amdgcn -emit-llvm %s \
+// RUN:     -o - -x hip\
+// RUN:   | FileCheck -allow-deprecated-dag-overlap %s --check-prefixes=ALL,WIN,HIP,HIPNEF
+
 #include "Inputs/cuda.h"
+
+// HIPNEF: $__hip_gpubin_handle = comdat any
 
 #ifndef NOGLOBALS
 // NORDC-DAG: @device_var = internal global i32
-// RDC-DAG: @device_var = dso_local global i32
+// RDC-DAG: @device_var = global i32
 // WIN-DAG: @"?device_var@@3HA" = internal global i32
 __device__ int device_var;
 
 // NORDC-DAG: @constant_var = internal global i32
-// RDC-DAG: @constant_var = dso_local global i32
+// RDC-DAG: @constant_var = global i32
 // WIN-DAG: @"?constant_var@@3HA" = internal global i32
 __constant__ int constant_var;
 
 // NORDC-DAG: @shared_var = internal global i32
-// RDC-DAG: @shared_var = dso_local global i32
+// RDC-DAG: @shared_var = global i32
 // WIN-DAG: @"?shared_var@@3HA" = internal global i32
 __shared__ int shared_var;
 
@@ -95,12 +101,12 @@ extern __constant__ int ext_constant_var;
 // external device-side variables with definitions should generate
 // definitions for the shadows.
 // NORDC-DAG: @ext_device_var_def = internal global i32 undef,
-// RDC-DAG: @ext_device_var_def = dso_local global i32 undef,
+// RDC-DAG: @ext_device_var_def = global i32 undef,
 // WIN-DAG: @"?ext_device_var_def@@3HA" = internal global i32 undef
 extern __device__ int ext_device_var_def;
 __device__ int ext_device_var_def = 1;
 // NORDC-DAG: @ext_device_var_def = internal global i32 undef,
-// RDC-DAG: @ext_device_var_def = dso_local global i32 undef,
+// RDC-DAG: @ext_device_var_def = global i32 undef,
 // WIN-DAG: @"?ext_constant_var_def@@3HA" = internal global i32 undef
 __constant__ int ext_constant_var_def = 2;
 

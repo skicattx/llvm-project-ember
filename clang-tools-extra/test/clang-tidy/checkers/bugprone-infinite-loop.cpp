@@ -511,8 +511,7 @@ void block_capture_with_loop_inside_block_bad() {
   bool finished = false;
   auto block = ^() {
     while (!finished) {
-      // FIXME: This should warn. It currently reacts to &finished
-      // outside the block which ideally shouldn't have any effect.
+      // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: this loop is infinite; none of its condition variables (finished) are updated in the loop body [bugprone-infinite-loop]
       wait();
     }
   };
@@ -590,5 +589,36 @@ void test_structured_bindings_bad() {
   auto &[y] = val;
   for (; x < 10; ++y) {
       // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: this loop is infinite; none of its condition variables (x) are updated in the loop body [bugprone-infinite-loop]
+  }
+}
+
+void test_volatile_cast() {
+  // This is a no-op cast. Clang ignores the qualifier, we should too.
+  for (int i = 0; (volatile int)i < 10;) {
+    // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: this loop is infinite; none of its condition variables (i) are updated in the loop body [bugprone-infinite-loop]
+  }
+}
+
+void test_volatile_concrete_address(int i, int size) {
+  // No warning. The value behind the volatile concrete address
+  // is beyond our control. It may change at any time.
+  for (; *((volatile int *)0x1234) < size;) {
+  }
+
+  for (; *((volatile int *)(0x1234 + i)) < size;) {
+  }
+
+  for (; **((volatile int **)0x1234) < size;) {
+  }
+
+  volatile int *x = (volatile int *)0x1234;
+  for (; *x < 10;) {
+  }
+
+  // FIXME: This one should probably also be suppressed.
+  // Whatever the developer is doing here, they can do that again anywhere else
+  // which basically makes it a global.
+  for (; *(int *)0x1234 < size;) {
+    // CHECK-MESSAGES: :[[@LINE-1]]:3: warning: this loop is infinite; none of its condition variables (size) are updated in the loop body [bugprone-infinite-loop]
   }
 }

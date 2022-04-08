@@ -14,7 +14,7 @@
 #undef _HAVE_X
 #undef X__Y
 
-// whitelisted definitions
+// allowlisted definitions
 #define while while
 #define const
 #define static
@@ -62,3 +62,6 @@
 #undef X__Y
 
 int x;
+
+#define _GNU_SOURCE          // no-warning
+#define __STDC_FORMAT_MACROS // no-warning

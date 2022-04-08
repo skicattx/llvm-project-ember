@@ -48,8 +48,8 @@ add_clang_library(clang-cpp
                   ${_OBJECTS}
                   LINK_LIBS
                   ${_DEPS})
-# Optimize function calls and global variable access for default visibility
-# definitions to avoid PLT and reduce dynamic relocations.
-if (NOT APPLE)
+# Optimize function calls for default visibility definitions to avoid PLT and
+# reduce dynamic relocations.
+if (NOT APPLE AND NOT MINGW)
   target_link_options(clang-cpp PRIVATE LINKER:-Bsymbolic-functions)
 endif()

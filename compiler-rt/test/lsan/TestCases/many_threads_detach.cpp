@@ -21,26 +21,14 @@ void *null_func(void *args) {
   return NULL;
 }
 
-int count_threads() {
-  DIR *d = opendir("/proc/self/task");
-  assert(d);
-  int count = 0;
-  while (readdir(d))
-    ++count;
-  closedir(d);
-  assert(count);
-  return count;
-}
-
 int main(void) {
   for (size_t i = 0; i < kTestThreads; i += kTestThreadsBatch) {
-    for (size_t j = 0; j < kTestThreadsBatch; ++j) {
-      pthread_t thread;
-      assert(pthread_create(&thread, NULL, null_func, NULL) == 0);
-      pthread_detach(thread);
-    }
-    while (count_threads() > 10)
-      sched_yield();
+    pthread_t thread[kTestThreadsBatch];
+    for (size_t j = 0; j < kTestThreadsBatch; ++j)
+      assert(pthread_create(&thread[j], NULL, null_func, NULL) == 0);
+
+    for (size_t j = 0; j < kTestThreadsBatch; ++j)
+      assert(pthread_join(thread[j], NULL) == 0);
   }
   return 0;
 }

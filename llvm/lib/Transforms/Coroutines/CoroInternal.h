@@ -36,6 +36,11 @@ void initializeCoroCleanupLegacyPass(PassRegistry &);
 // adds coroutine subfunctions to the SCC to be processed by IPO pipeline.
 // Async lowering similarily triggers a restart of the pipeline after it has
 // split the coroutine.
+//
+// FIXME: Refactor these attributes as LLVM attributes instead of string
+// attributes since these attributes are already used outside LLVM's
+// coroutine module.
+// FIXME: Remove these values once we remove the Legacy PM.
 #define CORO_PRESPLIT_ATTR "coroutine.presplit"
 #define UNPREPARED_FOR_SPLIT "0"
 #define PREPARED_FOR_SPLIT "1"
@@ -45,6 +50,7 @@ void initializeCoroCleanupLegacyPass(PassRegistry &);
 
 namespace coro {
 
+bool declaresAnyIntrinsic(const Module &M);
 bool declaresIntrinsics(const Module &M,
                         const std::initializer_list<StringRef>);
 void replaceCoroFree(CoroIdInst *CoroId, bool Elide);
@@ -54,7 +60,7 @@ void updateCallGraph(Function &Caller, ArrayRef<Function *> Funcs,
 /// holding a pointer to the coroutine frame.
 void salvageDebugInfo(
     SmallDenseMap<llvm::Value *, llvm::AllocaInst *, 4> &DbgPtrAllocaCache,
-    DbgDeclareInst *DDI, bool ReuseFrameSlot);
+    DbgVariableIntrinsic *DVI, bool OptimizeFrame);
 
 // Keeps data and helper functions for lowering coroutine intrinsics.
 struct LowererBase {
@@ -99,6 +105,7 @@ struct LLVM_LIBRARY_VISIBILITY Shape {
   CoroBeginInst *CoroBegin;
   SmallVector<AnyCoroEndInst *, 4> CoroEnds;
   SmallVector<CoroSizeInst *, 2> CoroSizes;
+  SmallVector<CoroAlignInst *, 2> CoroAligns;
   SmallVector<AnyCoroSuspendInst *, 4> CoroSuspends;
   SmallVector<CallInst*, 2> SwiftErrorOps;
 
@@ -122,17 +129,19 @@ struct LLVM_LIBRARY_VISIBILITY Shape {
   StructType *FrameTy;
   Align FrameAlign;
   uint64_t FrameSize;
-  Instruction *FramePtr;
+  Value *FramePtr;
   BasicBlock *AllocaSpillBlock;
 
   /// This would only be true if optimization are enabled.
-  bool ReuseFrameSlot;
+  bool OptimizeFrame;
 
   struct SwitchLoweringStorage {
     SwitchInst *ResumeSwitch;
     AllocaInst *PromiseAlloca;
     BasicBlock *ResumeEntryBlock;
     unsigned IndexField;
+    unsigned IndexAlign;
+    unsigned IndexOffset;
     bool HasFinalSuspend;
   };
 
@@ -202,10 +211,9 @@ struct LLVM_LIBRARY_VISIBILITY Shape {
 
   FunctionType *getResumeFunctionType() const {
     switch (ABI) {
-    case coro::ABI::Switch: {
-      auto *FnPtrTy = getSwitchResumePointerType();
-      return cast<FunctionType>(FnPtrTy->getPointerElementType());
-    }
+    case coro::ABI::Switch:
+      return FunctionType::get(Type::getVoidTy(FrameTy->getContext()),
+                               FrameTy->getPointerTo(), /*IsVarArg*/false);
     case coro::ABI::Retcon:
     case coro::ABI::RetconOnce:
       return RetconLowering.ResumePrototype->getFunctionType();
@@ -259,6 +267,12 @@ struct LLVM_LIBRARY_VISIBILITY Shape {
     return nullptr;
   }
 
+  Instruction *getInsertPtAfterFramePtr() const {
+    if (auto *I = dyn_cast<Instruction>(FramePtr))
+      return I->getNextNode();
+    return &cast<Argument>(FramePtr)->getParent()->getEntryBlock().front();
+  }
+
   /// Allocate memory according to the rules of the active lowering.
   ///
   /// \param CG - if non-null, will be updated for the new call
@@ -270,8 +284,8 @@ struct LLVM_LIBRARY_VISIBILITY Shape {
   void emitDealloc(IRBuilder<> &Builder, Value *Ptr, CallGraph *CG) const;
 
   Shape() = default;
-  explicit Shape(Function &F, bool ReuseFrameSlot = false)
-      : ReuseFrameSlot(ReuseFrameSlot) {
+  explicit Shape(Function &F, bool OptimizeFrame = false)
+      : OptimizeFrame(OptimizeFrame) {
     buildFrom(F);
   }
   void buildFrom(Function &F);

@@ -11,14 +11,17 @@
 #include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/COFF.h"
 #include "llvm/BinaryFormat/ELF.h"
+#include "llvm/BinaryFormat/Wasm.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCSectionCOFF.h"
 #include "llvm/MC/MCSectionELF.h"
+#include "llvm/MC/MCSectionGOFF.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSectionWasm.h"
 #include "llvm/MC/MCSectionXCOFF.h"
+#include "llvm/Support/Casting.h"
 
 using namespace llvm;
 
@@ -297,6 +300,18 @@ void MCObjectFileInfo::initMachOMCObjectFileInfo(const Triple &T) {
   RemarksSection = Ctx->getMachOSection(
       "__LLVM", "__remarks", MachO::S_ATTR_DEBUG, SectionKind::getMetadata());
 
+  // The architecture of dsymutil makes it very difficult to copy the Swift
+  // reflection metadata sections into the __TEXT segment, so dsymutil creates
+  // these sections in the __DWARF segment instead.
+  if (!Ctx->getSwift5ReflectionSegmentName().empty()) {
+#define HANDLE_SWIFT_SECTION(KIND, MACHO, ELF, COFF)                           \
+  Swift5ReflectionSections                                                     \
+      [llvm::binaryformat::Swift5ReflectionSectionKind::KIND] =                \
+          Ctx->getMachOSection(Ctx->getSwift5ReflectionSegmentName().data(),   \
+                               MACHO, 0, SectionKind::getMetadata());
+#include "llvm/BinaryFormat/Swift.def"
+  }
+
   TLSExtraDataSection = TLSTLVSection;
 }
 
@@ -501,6 +516,11 @@ void MCObjectFileInfo::initELFMCObjectFileInfo(const Triple &T, bool Large) {
   PseudoProbeSection = Ctx->getELFSection(".pseudo_probe", DebugSecType, 0);
   PseudoProbeDescSection =
       Ctx->getELFSection(".pseudo_probe_desc", DebugSecType, 0);
+}
+
+void MCObjectFileInfo::initGOFFMCObjectFileInfo(const Triple &T) {
+  TextSection = Ctx->getGOFFSection(".text", SectionKind::getText());
+  BSSSection = Ctx->getGOFFSection(".bss", SectionKind::getBSS());
 }
 
 void MCObjectFileInfo::initCOFFMCObjectFileInfo(const Triple &T) {
@@ -791,9 +811,10 @@ void MCObjectFileInfo::initWasmMCObjectFileInfo(const Triple &T) {
   DwarfLineSection =
       Ctx->getWasmSection(".debug_line", SectionKind::getMetadata());
   DwarfLineStrSection =
-      Ctx->getWasmSection(".debug_line_str", SectionKind::getMetadata());
-  DwarfStrSection =
-      Ctx->getWasmSection(".debug_str", SectionKind::getMetadata());
+      Ctx->getWasmSection(".debug_line_str", SectionKind::getMetadata(),
+                          wasm::WASM_SEG_FLAG_STRINGS);
+  DwarfStrSection = Ctx->getWasmSection(
+      ".debug_str", SectionKind::getMetadata(), wasm::WASM_SEG_FLAG_STRINGS);
   DwarfLocSection =
       Ctx->getWasmSection(".debug_loc", SectionKind::getMetadata());
   DwarfAbbrevSection =
@@ -836,7 +857,8 @@ void MCObjectFileInfo::initWasmMCObjectFileInfo(const Triple &T) {
   DwarfAbbrevDWOSection =
       Ctx->getWasmSection(".debug_abbrev.dwo", SectionKind::getMetadata());
   DwarfStrDWOSection =
-      Ctx->getWasmSection(".debug_str.dwo", SectionKind::getMetadata());
+      Ctx->getWasmSection(".debug_str.dwo", SectionKind::getMetadata(),
+                          wasm::WASM_SEG_FLAG_STRINGS);
   DwarfLineDWOSection =
       Ctx->getWasmSection(".debug_line.dwo", SectionKind::getMetadata());
   DwarfLocDWOSection =
@@ -887,6 +909,19 @@ void MCObjectFileInfo::initXCOFFMCObjectFileInfo(const Triple &T) {
       ".rodata", SectionKind::getReadOnly(),
       XCOFF::CsectProperties(XCOFF::StorageMappingClass::XMC_RO, XCOFF::XTY_SD),
       /* MultiSymbolsAllowed*/ true);
+  ReadOnlySection->setAlignment(Align(4));
+
+  ReadOnly8Section = Ctx->getXCOFFSection(
+      ".rodata.8", SectionKind::getReadOnly(),
+      XCOFF::CsectProperties(XCOFF::StorageMappingClass::XMC_RO, XCOFF::XTY_SD),
+      /* MultiSymbolsAllowed*/ true);
+  ReadOnly8Section->setAlignment(Align(8));
+
+  ReadOnly16Section = Ctx->getXCOFFSection(
+      ".rodata.16", SectionKind::getReadOnly(),
+      XCOFF::CsectProperties(XCOFF::StorageMappingClass::XMC_RO, XCOFF::XTY_SD),
+      /* MultiSymbolsAllowed*/ true);
+  ReadOnly16Section->setAlignment(Align(16));
 
   TLSDataSection = Ctx->getXCOFFSection(
       ".tdata", SectionKind::getThreadData(),
@@ -959,6 +994,8 @@ void MCObjectFileInfo::initXCOFFMCObjectFileInfo(const Triple &T) {
       /* MultiSymbolsAllowed */ true, ".dwmac", XCOFF::SSUBTYP_DWMAC);
 }
 
+MCObjectFileInfo::~MCObjectFileInfo() = default;
+
 void MCObjectFileInfo::initMCObjectFileInfo(MCContext &MCCtx, bool PIC,
                                             bool LargeCodeModel) {
   PositionIndependent = PIC;
@@ -992,11 +1029,16 @@ void MCObjectFileInfo::initMCObjectFileInfo(MCContext &MCCtx, bool PIC,
   case MCContext::IsELF:
     initELFMCObjectFileInfo(TheTriple, LargeCodeModel);
     break;
+  case MCContext::IsGOFF:
+    initGOFFMCObjectFileInfo(TheTriple);
+    break;
   case MCContext::IsWasm:
     initWasmMCObjectFileInfo(TheTriple);
     break;
   case MCContext::IsXCOFF:
     initXCOFFMCObjectFileInfo(TheTriple);
+    break;
+  case MCContext::IsDXContainer:
     break;
   }
 }
@@ -1014,6 +1056,7 @@ MCSection *MCObjectFileInfo::getDwarfComdatSection(const char *Name,
   case Triple::COFF:
   case Triple::GOFF:
   case Triple::XCOFF:
+  case Triple::DXContainer:
   case Triple::UnknownObjectFormat:
     report_fatal_error("Cannot get DWARF comdat section for this object file "
                        "format: not implemented.");
