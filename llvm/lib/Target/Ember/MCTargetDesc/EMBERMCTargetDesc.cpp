@@ -16,7 +16,9 @@
 #include "EMBERTargetStreamer.h"
 #include "TargetInfo/EMBERTargetInfo.h"
 #include "llvm/MC/MCInstrInfo.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/MC/LaneBitmask.h"
 
 #define GET_INSTRINFO_MC_DESC
 #include "EMBERGenInstrInfo.inc"

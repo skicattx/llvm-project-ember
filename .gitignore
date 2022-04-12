@@ -70,3 +70,8 @@ pythonenv*
 /lldb/docs/python_api/
 
 debug/
+
+llvm/debug19
+llvm/debug22
+llvm/release19
+llvm/release22

@@ -58,7 +58,9 @@ public:
     llvm_unreachable("Handled by fixupNeedsRelaxationAdvanced");
   }
 
-  bool writeNopData(raw_ostream &OS, uint64_t Count) const override;
+    bool writeNopData(raw_ostream &OS, uint64_t Count, const MCSubtargetInfo *STI) const;
+
+//   bool writeNopData(raw_ostream &OS, uint64_t Count) const override;
 
  
     Optional<MCFixupKind> getFixupKind(StringRef Name) const override;

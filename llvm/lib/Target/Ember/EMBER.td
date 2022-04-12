@@ -39,7 +39,7 @@ def EMBERAsmParser : AsmParser {
 class Proc<string Name, list<SubtargetFeature> Features>
  : Processor<Name, NoItineraries, Features>;
 
-def : Proc<"ember32",         []>;
+def : Proc<"ember32x", []>;
 def : ProcessorModel<"ember32", NoSchedModel, []>;
 
 

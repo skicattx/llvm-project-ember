@@ -27,6 +27,17 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cstdint>
 
+
+
+//#include "SparcMachineFunctionInfo.h"
+//#include "llvm/CodeGen/MachineInstrBuilder.h"
+//#include "llvm/CodeGen/TargetInstrInfo.h"
+//#include "llvm/IR/Type.h"
+//#include "llvm/Support/CommandLine.h"
+
+
+
+
 using namespace llvm;
 
 #define DEBUG_TYPE "EMBER-reg-info"

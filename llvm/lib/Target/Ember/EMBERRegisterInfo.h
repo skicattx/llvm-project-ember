@@ -9,8 +9,10 @@
 #define LLVM_LIB_TARGET_MIPS_MIPSREGISTERINFO_H
 
 #include "EMBER.h"
-#include "llvm/CodeGen/MachineBasicBlock.h"
-#include <cstdint>
+#include "llvm/CodeGen/TargetRegisterInfo.h"
+
+//#include "llvm/CodeGen/MachineBasicBlock.h"
+//#include <cstdint>
 
 #define GET_REGINFO_HEADER
 #include "EMBERGenRegisterInfo.inc"

@@ -27,7 +27,7 @@ class MCSubtargetInfo;
 class Target;
 
 MCCodeEmitter *createEMBERMCCodeEmitter(const MCInstrInfo &MCII,
-                                        const MCRegisterInfo &MRI,
+//                                        const MCRegisterInfo &MRI,
                                         MCContext &Ctx);
 
 MCAsmBackend *createEMBERAsmBackend(const Target &T, const MCSubtargetInfo &STI,

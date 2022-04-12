@@ -67,9 +67,9 @@ const MCFixupKindInfo &EMBERAsmBackend::getFixupKindInfo(MCFixupKind Kind) const
     return Infos[Kind - FirstTargetFixupKind];
 }
 
-bool EMBERAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count) const 
-{
 
+bool EMBERAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count, const MCSubtargetInfo *STI) const
+{
   return true;
 }
 /*
