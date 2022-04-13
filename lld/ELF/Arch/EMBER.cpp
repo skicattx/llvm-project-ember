@@ -28,6 +28,8 @@ namespace
         RelExpr getRelExpr(RelType type, const Symbol &s, const uint8_t *loc) const override;
         void writePlt(uint8_t *buf, const Symbol &sym, uint64_t pltEntryAddr) const override;
         void relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const override;
+        int64_t getImplicitAddend(const uint8_t *buf, RelType type) const override;
+
     };
 } // namespace
 
@@ -98,6 +100,30 @@ void EMBER::relocate(uint8_t *loc, const Relocation &rel, uint64_t val) const
             llvm_unreachable("unknown relocation");
     }
 }
+
+
+int64_t EMBER::getImplicitAddend(const uint8_t *buf, RelType type) const 
+{
+    switch (type) 
+    {
+        case R_PPC_NONE:
+            return 0;
+        case R_EMBER_32: 
+            return SignExtend64<32>(read32le(buf));
+        case R_EMBER_32_PCREL: 
+            return SignExtend64<32>(read32le(buf));
+        case R_EMBER_LDI_LABEL_ADDR_LO:
+            return SignExtend64<16>(read32le(buf));
+        case R_EMBER_LDI_LABEL_ADDR_HI:
+            return SignExtend64<32>(read32le(buf) << 16);
+        default:
+            internalLinkerError(getErrorLocation(buf),
+                                "cannot read addend for relocation " + toString(type));
+        return 0;
+    }
+}
+
+
 
 void EMBER::writePlt(uint8_t *buf, const Symbol & /*sym*/, uint64_t pltEntryAddr) const 
 {
