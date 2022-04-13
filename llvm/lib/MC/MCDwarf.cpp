@@ -1219,6 +1219,9 @@ void MCGenDwarfLabelEntry::Make(MCSymbol *Symbol, MCStreamer *MCOS,
   MCSymbol *Label = context.createTempSymbol();
   MCOS->emitLabel(Label);
 
+  // Override with buffer num
+  FileNumber = CurBuffer;
+
   // Create and entry for the info and add it to the other entries.
   MCOS->getContext().addMCGenDwarfLabelEntry(
       MCGenDwarfLabelEntry(Name, FileNumber, LineNumber, Label));

@@ -56,6 +56,7 @@
 #include "llvm/Support/SMLoc.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/Path.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -863,6 +864,13 @@ bool AsmParser::enterIncludeFile(const std::string &Filename) {
 
   CurBuffer = NewBuf;
   Lexer.setBuffer(SrcMgr.getMemoryBuffer(CurBuffer)->getBuffer());
+
+  StringRef IncludedPath = sys::path::parent_path(IncludedFile);
+  getStreamer().emitDwarfFileDirective(CurBuffer, IncludedPath, Filename);
+//  , RootFile.Checksum, RootFile.Source)
+//   getContext().setGenDwarfFileNumber(getStreamer().emitDwarfFileDirective(
+
+
   return false;
 }
 
@@ -974,7 +982,10 @@ bool AsmParser::Run(bool NoInitialTextSection, bool NoFinalize) {
   // section.  (Don't use enabledGenDwarfForAssembly() here, as we aren't
   // emitting any actual debug info yet and haven't had a chance to parse any
   // embedded .file directives.)
-  if (getContext().getGenDwarfForAssembly()) {
+//  if (getContext().getGenDwarfForAssembly()) {
+
+  // Actually we do for EMBER, as we want to support .include "", which doesn't work with DWARF in LLVM-MC
+  if (enabledGenDwarfForAssembly()) {
     MCSection *Sec = getStreamer().getCurrentSectionOnly();
     if (!Sec->getBeginSymbol()) {
       MCSymbol *SectionStartSym = getContext().createTempSymbol();
@@ -2371,7 +2382,7 @@ bool AsmParser::parseAndMatchAndEmitTargetInstruction(ParseStatementInfo &Info,
     }
 
     getStreamer().emitDwarfLocDirective(
-        getContext().getGenDwarfFileNumber(), Line, 0,
+        CurBuffer /*getContext().getGenDwarfFileNumber()*/, Line, 0,
         DWARF2_LINE_DEFAULT_IS_STMT ? DWARF2_FLAG_IS_STMT : 0, 0, 0,
         StringRef());
   }
