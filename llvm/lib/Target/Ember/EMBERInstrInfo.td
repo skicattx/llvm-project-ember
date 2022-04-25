@@ -54,10 +54,10 @@ include "EMBERInstrFormats.td"
 //======================================================================================================================
 
 // Special/System OpCodes
-def  NOP  : EMBERInstrSys<0x00, "nop", [], NoItinerary>;
+def  NOP  : EMBERInstrSys<0x00, "nop",  [], NoItinerary>;
 def  HALT : EMBERInstrSys<0x01, "halt", [], NoItinerary>;
-def  INT  : EMBERInstrSys<0x02, "int", [], NoItinerary>;
-def  RTI  : EMBERInstrSys<0x03, "rti", [], NoItinerary>;
+def  TRAP : EMBERInstrSys<0x02, "trap", [], NoItinerary>;
+def  RTU  : EMBERInstrSys<0x03, "rtu",  [], NoItinerary>;
 
 // Branch OpCodes
 defm BRA  : EMBERInstr_bra_cond<0x06, "bra", [], NoItinerary>;
