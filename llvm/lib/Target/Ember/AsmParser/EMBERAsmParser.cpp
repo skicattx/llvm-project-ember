@@ -226,7 +226,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && (isInt<8>(Imm) || isUInt<8>(Imm));
+        return IsConstantImm && ((Imm>>8 == 0) || ((Imm|0xFF) == -1));
     }
     bool isUImm8() const
     {
@@ -234,7 +234,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isUInt<8>(Imm);
+        return IsConstantImm && (Imm >> 8 == 0);
     }
 
     bool isSImm14() const 
@@ -243,7 +243,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isInt<14>(Imm);
+        return IsConstantImm && ((Imm >> 14 == 0) || ((Imm|0x3FFF) == -1));
     }
 
     bool isUImm14() const 
@@ -252,7 +252,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isUInt<14>(Imm);
+        return IsConstantImm && (Imm >> 14 == 0);
     }
 
     bool isSImm16() const 
@@ -261,7 +261,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && (isInt<16>(Imm) || isUInt<16>(Imm));
+        return IsConstantImm && ((Imm >> 16 == 0) || ((Imm|0xFFFF) == -1));
     }
     bool isUImm16() const
     {
@@ -269,7 +269,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isUInt<16>(Imm);
+        return IsConstantImm && (Imm >> 16 == 0);
     }
 
 
@@ -279,7 +279,7 @@ public:
         if (!isImm())
             return false;
         bool IsConstantImm = evaluateConstantImm(getImm(), Imm);
-        return IsConstantImm && isUInt<22>(Imm);
+        return IsConstantImm && (Imm >> 22 == 0);
     }
 
     bool isUImm32() const 
@@ -307,6 +307,7 @@ public:
         if (evaluateConstantImm(getImm(), Imm))
         {
             // If it's a literal imm, then check the bits
+            Imm = SignExtend64((uint64_t)Imm, 32);
             return isInt<32>(Imm);
         }
 
