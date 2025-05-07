@@ -909,15 +909,15 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
         switch (Inst.getOpcode()) 
         {
             case EMBER::LDI_w_lo:
-                if (static_cast<uint16_t>(value>>16) == 0xFFFF)
+                if (static_cast<uint16_t>(value >> 16) == 0xFFFF) // If all the high bits are 1, then we can use the high extend bit and not submit another LDIH instruction
                     { emitToStreamer(Out, Inst); return; }
             case EMBER::LDI_hh_lo:
             case EMBER::LDI_bbbb_lo: //?
-                if (static_cast<uint16_t>(value) == value) 
-                    { emitToStreamer(Out, Inst); return; }
-                break;
+                if (static_cast<uint16_t>(value) != value) 
+                    break;
             default: 
-                break; 
+                emitToStreamer(Out, Inst);
+                return;
         }
     }
 
