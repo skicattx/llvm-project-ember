@@ -145,17 +145,30 @@ void EMBERInstPrinter::printOperand(const MCInst          *MI,
                 value << (uint32_t)MO.getImm();
                 break;
 
-            // 16-bit Values
+            // 16-bit extended to 32-bit Values
             case EMBER::LDI_w_lo:
+            {
+                int64_t valExtended = MO.getImm();
+                if (valExtended & 0x10000)
+                    value << "ffff";
+                else
+                  value << "0000";
+
+                value << std::setfill('0') << std::setw(4)
+                      << (uint16_t)MO.getImm();
+                break;
+            }
+
+            // 16-bit Values
             case EMBER::LDI_h_lo:
-            case EMBER::LDIS_sh:
+            case EMBER::LDI_sh_lo:
             case EMBER::LDI_bb_lo:
                 value << std::setfill('0') << std::setw(4) << (uint16_t)MO.getImm();
                 break;
 
             // 8-bit Values
             case EMBER::LDI_b_lo:
-            case EMBER::LDIS_sb:
+            case EMBER::LDI_sb_lo:
                 value << (uint8_t)MO.getImm();
                 break;
         }

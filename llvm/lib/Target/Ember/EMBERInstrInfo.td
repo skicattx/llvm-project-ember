@@ -72,7 +72,6 @@ defm MOV : EMBERInstr_mov<0x0A, [], NoItinerary>;
 
 // LDI OpCode (+LDIH)
 defm LDI : EMBERInstr_ldi<0x0B, [], NoItinerary>;
-defm LDIS : EMBERInstr_ldis<0x0B, [], NoItinerary>;
 
 // Load/Store Memory OpCodes
 defm LD : EMBERInstr_ld<0x0E, [], NoItinerary>;

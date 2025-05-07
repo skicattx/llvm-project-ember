@@ -248,7 +248,7 @@ multiclass EMBERInstr_mov<bits<6> op, list<dag> pattern, InstrItinClass itin>
 //======================================================================================================================
 //======================================================================================================================
 // EMBER LDI OpCodes with 16-bit Immediate value: 
-//  <|opcode|width|h|0b00|imm16|>
+//  <|opcode|width|h|0|hbf|imm16|>
 //======================================================================================================================
 multiclass EMBERInstr_ldi_lohi_i<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin>
 {
@@ -264,10 +264,13 @@ multiclass EMBERInstr_ldi_lohi_i<bits<6> op, bits<3> width, string widthstr, lis
         let Inst{22-19} = rd;
 
         // 3 flag bits 
-        let Inst{18-16} = 0b000; // |lo|0|0|
+        let Inst{18-17} = 0b00; // |lo|0|
 
-        // low 16 bits of imm32 (code will validate, and add an additional ldih if needed to handle the high bits)
+        // low 16 bits plus sign of imm32 (code will validate, and add an additional ldih if needed to handle the high bits)
         let Inst{15-0} = imm32{15-0};
+
+        // High bit fill value (if no Width code is specified, then this bit is repeated in the 16 high bits of the output)
+        let Inst{16} = imm32{31};
     }
     def _hi : EMBERInst<op, (outs GPR32:$rd), (ins uimm16:$imm16), "ldih" # widthstr # "\t$rd, \t$imm16", pattern, itin>
     {
@@ -287,24 +290,7 @@ multiclass EMBERInstr_ldi_lohi_i<bits<6> op, bits<3> width, string widthstr, lis
         let Inst{15-0} = imm16;
     }
 }
-class EMBERInstr_ldis_lohi_i<bits<6> op, bits<3> width, string widthstr, list<dag> pattern, InstrItinClass itin> :
-    EMBERInst<op, (outs GPR32:$rd), (ins simm16:$imm16), "ldi" # widthstr # "\t$rd, \t$imm16", pattern, itin>
-{
-    bits<4>  rd;        // Dest Reg
-    bits<16> imm16;     // LDI low signed 
-    
-    // Then 3 bits for the 'WidthCode' field (.b, .h, etc.)
-    let Inst{25-23} = width;
 
-    // 4 bits for Dest Reg
-    let Inst{22-19} = rd;
-
-    // 3 flag bits 
-    let Inst{18-16} = 0b000; // |lo|0|0|
-
-    // low 16 bits of imm32 (code will validate)
-    let Inst{15-0} = imm16;
-}
 
 //======================================================================================================================
 // Add in the condition codes and aliases
@@ -313,16 +299,14 @@ multiclass EMBERInstr_ldi<bits<6> op, list<dag> pattern, InstrItinClass itin>
 {
     defm _w    : EMBERInstr_ldi_lohi_i<op, 0x0, "",      pattern, itin>;
     defm _h    : EMBERInstr_ldi_lohi_i<op, 0x1, ".h",    pattern, itin>; 
+    defm _sh   : EMBERInstr_ldi_lohi_i<op, 0x2, ".sh",   pattern, itin>;
     defm _b    : EMBERInstr_ldi_lohi_i<op, 0x3, ".b",    pattern, itin>;
+    defm _sb   : EMBERInstr_ldi_lohi_i<op, 0x4, ".sb",   pattern, itin>;
     defm _hh   : EMBERInstr_ldi_lohi_i<op, 0x5, ".hh",   pattern, itin>;
     defm _bb   : EMBERInstr_ldi_lohi_i<op, 0x6, ".bb",   pattern, itin>;
     defm _bbbb : EMBERInstr_ldi_lohi_i<op, 0x7, ".bbbb", pattern, itin>;
 }
-multiclass EMBERInstr_ldis<bits<6> op, list<dag> pattern, InstrItinClass itin>
-{
-    def _sh   : EMBERInstr_ldis_lohi_i<op, 0x2, ".sh",   pattern, itin>;
-    def _sb   : EMBERInstr_ldis_lohi_i<op, 0x4, ".sb",   pattern, itin>;
-}
+
 
 //======================================================================================================================
 //======================================================================================================================

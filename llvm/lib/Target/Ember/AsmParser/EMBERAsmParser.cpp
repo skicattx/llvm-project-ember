@@ -909,13 +909,15 @@ void EMBERAsmParser::emitLDIImm(MCInst& Inst, SMLoc IDLoc, MCStreamer& Out)
         switch (Inst.getOpcode()) 
         {
             case EMBER::LDI_w_lo:
+                if (static_cast<uint16_t>(value>>16) == 0xFFFF)
+                    { emitToStreamer(Out, Inst); return; }
             case EMBER::LDI_hh_lo:
             case EMBER::LDI_bbbb_lo: //?
-                if (static_cast<uint16_t>(value) != value)
-                    break;
+                if (static_cast<uint16_t>(value) == value) 
+                    { emitToStreamer(Out, Inst); return; }
+                break;
             default: 
-                emitToStreamer(Out, Inst);
-                return; 
+                break; 
         }
     }
 
@@ -969,7 +971,7 @@ unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo,
             ErrorInfo = 2; // rd==0, rA==1, rB/Imm==2? should be 1 for LDI
             return Match_InvalidUImm16;
         }
-        case EMBER::LDIS_sh:
+        case EMBER::LDI_sh_lo:
         {
             MCOperand SourceImm = Inst.getOperand(1);
             if (SourceImm.isImm())
@@ -993,7 +995,7 @@ unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo,
             ErrorInfo = 2;
             return Match_InvalidUImm8;
         }
-        case EMBER::LDIS_sb:
+        case EMBER::LDI_sb_lo:
         {
             MCOperand SourceImm = Inst.getOperand(1);
             if (SourceImm.isImm())
@@ -1005,6 +1007,7 @@ unsigned  EMBERAsmParser::validateInstruction(MCInst &Inst, uint64_t &ErrorInfo,
             ErrorInfo = 2;
             return Match_InvalidSImm8;
         }
+        // TODO: What about the _hi versions?
     }
 
   return Match_Success;
@@ -1027,8 +1030,8 @@ bool EMBERAsmParser::processInstruction(MCInst         &Inst,
     case EMBER::LDI_w_lo:
     case EMBER::LDI_h_lo:
     case EMBER::LDI_b_lo:
-    case EMBER::LDIS_sh:
-    case EMBER::LDIS_sb:
+    case EMBER::LDI_sh_lo:
+    case EMBER::LDI_sb_lo:
     case EMBER::LDI_hh_lo:
     case EMBER::LDI_bb_lo:
     case EMBER::LDI_bbbb_lo:

@@ -64,10 +64,10 @@ let Namespace = "EMBER" in {
   // System Registers
   def CC   : EMBERMovReg< 16, "cc">,  DwarfRegNum<[16]>;
   def PC   : EMBERMovReg< 17, "pc">,  DwarfRegNum<[17]>;
-  def T0   : EMBERMovReg< 18, "t0">,  DwarfRegNum<[18]>;
-  def T1   : EMBERMovReg< 19, "t1">,  DwarfRegNum<[19]>;
-  def T2   : EMBERMovReg< 20, "t2">,  DwarfRegNum<[20]>;
-  def T3   : EMBERMovReg< 21, "t3">,  DwarfRegNum<[21]>;
+  def T0   : EMBERMovReg< 18, "cycles">,  DwarfRegNum<[18]>;
+  def T1   : EMBERMovReg< 19, "t0">,  DwarfRegNum<[19]>;
+  def T2   : EMBERMovReg< 20, "t1">,  DwarfRegNum<[20]>;
+  def T3   : EMBERMovReg< 21, "t2">,  DwarfRegNum<[21]>;
 
 //  .. 22-31 reserved
 
@@ -92,10 +92,10 @@ let Namespace = "EMBER" in {
   // System Registers
   def UCC   : EMBERMovReg< 48, "ucc">, DwarfRegNum<[48]>;
   def UPC   : EMBERMovReg< 49, "upc">, DwarfRegNum<[49]>;
-  def UT0   : EMBERMovReg< 50, "ut0">, DwarfRegNum<[50]>;
-  def UT1   : EMBERMovReg< 51, "ut1">, DwarfRegNum<[51]>;
-  def UT2   : EMBERMovReg< 52, "ut2">, DwarfRegNum<[52]>;
-  def UT3   : EMBERMovReg< 53, "ut3">, DwarfRegNum<[53]>;
+  def UT0   : EMBERMovReg< 50, "ucycles">, DwarfRegNum<[50]>;
+  def UT1   : EMBERMovReg< 51, "ut0">, DwarfRegNum<[51]>;
+  def UT2   : EMBERMovReg< 52, "ut1">, DwarfRegNum<[52]>;
+  def UT3   : EMBERMovReg< 53, "ut2">, DwarfRegNum<[53]>;
 
 //  .. 54-63 reserved
 
