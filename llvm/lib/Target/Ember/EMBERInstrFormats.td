@@ -102,6 +102,7 @@ multiclass EMBERInstr_bra_cond<bits<6> op, string opcodestr, list<dag> pattern, 
                                          
     defm _ng : EMBERInstr_bra_r_i<op, 0x3, opcodestr # ".lt", pattern, itin>;
     def : MnemonicAlias<opcodestr # ".ng", opcodestr # ".lt">;
+    def : MnemonicAlias<opcodestr # ".n", opcodestr # ".lt">;
                                          
     defm _ge : EMBERInstr_bra_r_i<op, 0x4, opcodestr # ".ge", pattern, itin>;
     def : MnemonicAlias<opcodestr # ".p", opcodestr # ".ge">;
