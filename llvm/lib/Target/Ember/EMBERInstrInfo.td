@@ -81,8 +81,8 @@ defm ST : EMBERInstr_st<0x0F, [], NoItinerary>;
 defm ADD  : EMBERInstr_rd_ra_rb_imm14<0x10, "add", [], NoItinerary>;
 defm SUB  : EMBERInstr_rd_ra_rb_imm14<0x11, "sub", [], NoItinerary>;
 defm MUL  : EMBERInstr_rd_ra_rb_imm14<0x12, "mul", [], NoItinerary>;
-//defm MHS  : EMBERInstr_rd_ra_rb_imm14<0x13, "mhs", [], NoItinerary>;
-//defm MHU  : EMBERInstr_rd_ra_rb_imm14<0x14, "mhu", [], NoItinerary>;
+defm MHS  : EMBERInstr_rd_ra_rb_imm14<0x13, "mhs", [], NoItinerary>;
+defm MHU  : EMBERInstr_rd_ra_rb_imm14<0x14, "mhu", [], NoItinerary>;
 defm DIV  : EMBERInstr_rd_ra_rb_imm14<0x15, "div", [], NoItinerary>;
 //defm DIVU : EMBERInstr_rd_ra_rb_imm14<0x16, "divu", [], NoItinerary>;
 //defm REM  : EMBERInstr_rd_ra_rb_imm14<0x17, "rem", [], NoItinerary>;   //?
